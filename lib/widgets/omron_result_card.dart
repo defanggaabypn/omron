@@ -217,18 +217,18 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
             ),
           ),
           const SizedBox(width: 8),
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: _shareGeneral,
-              icon: const Icon(Icons.share, size: 18),
-              label: const Text('Share', style: TextStyle(fontSize: 12)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green[600],
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 8),
-              ),
-            ),
-          ),
+          // Expanded(
+          //   child: ElevatedButton.icon(
+          //     onPressed: _shareGeneral,
+          //     icon: const Icon(Icons.share, size: 18),
+          //     label: const Text('Share', style: TextStyle(fontSize: 12)),
+          //     style: ElevatedButton.styleFrom(
+          //       backgroundColor: Colors.green[600],
+          //       foregroundColor: Colors.white,
+          //       padding: const EdgeInsets.symmetric(vertical: 8),
+          //     ),
+          //   ),
+          // ),
         ],
       );
     }
@@ -1540,43 +1540,43 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
   }
 
   // METHOD UNTUK SHARE UMUM (TANPA WHATSAPP KHUSUS)
-  Future<void> _shareGeneral() async {
-    try {
-      // Show loading dialog
-      if (!mounted) return;
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+  // Future<void> _shareGeneral() async {
+  //   try {
+  //     // Show loading dialog
+  //     if (!mounted) return;
+  //     showDialog(
+  //       context: context,
+  //       barrierDismissible: false,
+  //       builder: (context) => const Center(
+  //         child: CircularProgressIndicator(),
+  //       ),
+  //     );
 
-      // Generate PDF first
-      final String pdfPath = await PDFService.generateOmronReport(widget.data);
+  //     // Generate PDF first
+  //     final String pdfPath = await PDFService.generateOmronReport(widget.data);
       
-      // Close loading dialog dengan mounted check
-      if (!mounted) return;
-      Navigator.of(context).pop();
+  //     // Close loading dialog dengan mounted check
+  //     if (!mounted) return;
+  //     Navigator.of(context).pop();
       
-      // Show WhatsApp form dialog tanpa nomor terisi
-      if (!mounted) return;
-      showDialog(
-        context: context,
-        builder: (context) => WhatsAppFormDialog(
-          data: widget.data,
-          pdfPath: pdfPath,
-        ),
-      );
+  //     // Show WhatsApp form dialog tanpa nomor terisi
+  //     if (!mounted) return;
+  //     showDialog(
+  //       context: context,
+  //       builder: (context) => WhatsAppFormDialog(
+  //         data: widget.data,
+  //         pdfPath: pdfPath,
+  //       ),
+  //     );
       
-    } catch (e) {
-      // Close loading dialog dengan mounted check
-      if (mounted) Navigator.of(context).pop();
+  //   } catch (e) {
+  //     // Close loading dialog dengan mounted check
+  //     if (mounted) Navigator.of(context).pop();
       
-      // Show error dialog dengan mounted check
-      if (mounted) _showErrorDialog('Gagal membuat PDF', e.toString());
-    }
-  }
+  //     // Show error dialog dengan mounted check
+  //     if (mounted) _showErrorDialog('Gagal membuat PDF', e.toString());
+  //   }
+  // }
 
   // PDF Export method - SAMA SEPERTI ASLI
   Future<void> _exportToPDF() async {
