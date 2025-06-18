@@ -21,7 +21,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
   final _ageController = TextEditingController();
   final _heightController = TextEditingController();
   
-  // Omron Data Controllers
+  // Basic Omron Data Controllers
   final _weightController = TextEditingController();
   final _bodyFatController = TextEditingController();
   final _bmiController = TextEditingController();
@@ -29,10 +29,29 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
   final _visceralFatController = TextEditingController();
   final _restingMetabolismController = TextEditingController();
   final _bodyAgeController = TextEditingController();
+  
+  // New Additional Controllers
+  final _subcutaneousFatController = TextEditingController();
+  
+  // Segmental Controllers - Subcutaneous Fat
+  final _segSubTrunkController = TextEditingController();
+  final _segSubRightArmController = TextEditingController();
+  final _segSubLeftArmController = TextEditingController();
+  final _segSubRightLegController = TextEditingController();
+  final _segSubLeftLegController = TextEditingController();
+  
+  // Segmental Controllers - Skeletal Muscle
+  final _segMusTrunkController = TextEditingController();
+  final _segMusRightArmController = TextEditingController();
+  final _segMusLeftArmController = TextEditingController();
+  final _segMusRightLegController = TextEditingController();
+  final _segMusLeftLegController = TextEditingController();
 
   String _selectedGender = 'Male';
   bool _isLoading = false;
   bool _autoCalculateBMI = true;
+  bool _autoCalculateSegmental = true;
+  bool _autoCalculateSameAge = true;
   OmronData? _calculatedResult;
 
   @override
@@ -45,6 +64,10 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
     // Auto-calculate BMI when weight or height changes
     _weightController.addListener(_calculateBMI);
     _heightController.addListener(_calculateBMI);
+    
+    // Auto-calculate segmental data when main values change
+    _subcutaneousFatController.addListener(_calculateSegmentalData);
+    _skeletalMuscleController.addListener(_calculateSegmentalData);
   }
 
   void _calculateBMI() {
@@ -57,6 +80,31 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
       final heightInMeters = height / 100; // Convert cm to meters
       final bmi = weight / (heightInMeters * heightInMeters);
       _bmiController.text = bmi.toStringAsFixed(1);
+    }
+  }
+
+  void _calculateSegmentalData() {
+    if (!_autoCalculateSegmental) return;
+    
+    final subcutaneousFat = double.tryParse(_subcutaneousFatController.text);
+    final skeletalMuscle = double.tryParse(_skeletalMuscleController.text);
+    
+    if (subcutaneousFat != null) {
+      final segmental = OmronData.calculateSegmentalSubcutaneousFat(subcutaneousFat);
+      _segSubTrunkController.text = segmental['trunk']!.toStringAsFixed(1);
+      _segSubRightArmController.text = segmental['rightArm']!.toStringAsFixed(1);
+      _segSubLeftArmController.text = segmental['leftArm']!.toStringAsFixed(1);
+      _segSubRightLegController.text = segmental['rightLeg']!.toStringAsFixed(1);
+      _segSubLeftLegController.text = segmental['leftLeg']!.toStringAsFixed(1);
+    }
+    
+    if (skeletalMuscle != null) {
+      final segmental = OmronData.calculateSegmentalSkeletalMuscle(skeletalMuscle);
+      _segMusTrunkController.text = segmental['trunk']!.toStringAsFixed(1);
+      _segMusRightArmController.text = segmental['rightArm']!.toStringAsFixed(1);
+      _segMusLeftArmController.text = segmental['leftArm']!.toStringAsFixed(1);
+      _segMusRightLegController.text = segmental['rightLeg']!.toStringAsFixed(1);
+      _segMusLeftLegController.text = segmental['leftLeg']!.toStringAsFixed(1);
     }
   }
 
@@ -76,11 +124,11 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'LSHC Omron',
+            'LSHC Omron HBF-375',
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           Text(
-            'Body Composition Monitor tipe Omron HBF-516B',
+            'Body Composition Monitor - 11 Fitur Lengkap',
             style: TextStyle(fontSize: 12, color: Colors.white70),
           ),
         ],
@@ -150,7 +198,11 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                     },
                   ),
                   SizedBox(height: 16),
-                  _buildOmronDataCard(),
+                  _buildBasicOmronDataCard(),
+                  SizedBox(height: 16),
+                  _buildAdditionalDataCard(),
+                  SizedBox(height: 16),
+                  _buildSegmentalDataCard(),
                   SizedBox(height: 16),
                   _buildCalculateButton(),
                   SizedBox(height: 80), // Space for FAB
@@ -181,7 +233,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                         SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Analisis Berhasil!',
+                            'Analisis Berhasil! (11/11 Fitur Lengkap)',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: Colors.green[700],
@@ -236,12 +288,16 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                   ),
                 ),
                 SizedBox(width: 16),
-                // Right column: Omron Data
+                // Right column: Basic Data
                 Expanded(
-                  child: _buildOmronDataCard(),
+                  child: _buildBasicOmronDataCard(),
                 ),
               ],
             ),
+            SizedBox(height: 16),
+            _buildAdditionalDataCard(),
+            SizedBox(height: 16),
+            _buildSegmentalDataCard(),
             SizedBox(height: 16),
             _buildCalculateButton(),
             if (_calculatedResult != null) ...[
@@ -278,7 +334,11 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
               },
             ),
             SizedBox(height: 16),
-            _buildOmronDataCard(),
+            _buildBasicOmronDataCard(),
+            SizedBox(height: 16),
+            _buildAdditionalDataCard(),
+            SizedBox(height: 16),
+            _buildSegmentalDataCard(),
             SizedBox(height: 16),
             _buildCalculateButton(),
             if (_calculatedResult != null) ...[
@@ -313,7 +373,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Analisis Berhasil!',
+                      'Analisis Berhasil! (11/11 Fitur Lengkap)',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Colors.green[700],
@@ -355,107 +415,6 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
     );
   }
 
-  void _showResultDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (context) {
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            // Responsive dialog sizing
-            double dialogWidth;
-            double dialogHeight;
-            
-            if (constraints.maxWidth > 1200) {
-              // Desktop
-              dialogWidth = constraints.maxWidth * 0.7;
-              dialogHeight = constraints.maxHeight * 0.8;
-            } else if (constraints.maxWidth > 800) {
-              // Tablet
-              dialogWidth = constraints.maxWidth * 0.85;
-              dialogHeight = constraints.maxHeight * 0.85;
-            } else {
-              // Mobile
-              dialogWidth = constraints.maxWidth * 0.95;
-              dialogHeight = constraints.maxHeight * 0.9;
-            }
-
-            return Dialog(
-              insetPadding: EdgeInsets.symmetric(
-                horizontal: (constraints.maxWidth - dialogWidth) / 2,
-                vertical: (constraints.maxHeight - dialogHeight) / 2,
-              ),
-              child: Container(
-                width: dialogWidth,
-                height: dialogHeight,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: Colors.white,
-                ),
-                child: Column(
-                  children: [
-                    // Header
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.orange[700],
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(12),
-                          topRight: Radius.circular(12),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.analytics,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'Hasil Analisis - ${_calculatedResult!.patientName}',
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: () => Navigator.pop(context),
-                            icon: const Icon(
-                              Icons.close,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Content
-                    Expanded(
-                      child: OmronResultCard(data: _calculatedResult!),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _shareResult() {
-    // Implementation for sharing result
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Fitur berbagi akan segera tersedia'),
-        backgroundColor: Colors.orange[700],
-      ),
-    );
-  }
-
   Widget _buildHeaderCard() {
     return Card(
       elevation: 2,
@@ -482,7 +441,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Input Manual Data',
+                    'Input Manual Data Lengkap',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -491,7 +450,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                   ),
                   SizedBox(height: 4),
                   Text(
-                    'Masukkan data dari display Omron HBF-516B',
+                    'Masukkan data dari display Omron HBF-375 (11 Fitur)',
                     style: TextStyle(
                       color: Colors.grey[600],
                       fontSize: 14,
@@ -514,7 +473,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
     );
   }
 
-  Widget _buildOmronDataCard() {
+  Widget _buildBasicOmronDataCard() {
     return Card(
       elevation: 2,
       child: Padding(
@@ -528,7 +487,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '7 Indikator Fitness Omron',
+                    '7 Indikator Dasar Omron',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -545,10 +504,10 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
               builder: (context, constraints) {
                 if (constraints.maxWidth > 600) {
                   // Two column layout for wider screens
-                  return _buildTwoColumnForm();
+                  return _buildBasicTwoColumnForm();
                 } else {
                   // Single column for mobile
-                  return _buildSingleColumnForm();
+                  return _buildBasicSingleColumnForm();
                 }
               },
             ),
@@ -558,7 +517,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
     );
   }
 
-  Widget _buildTwoColumnForm() {
+  Widget _buildBasicTwoColumnForm() {
     return Column(
       children: [
         Row(
@@ -670,7 +629,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
     );
   }
 
-  Widget _buildSingleColumnForm() {
+  Widget _buildBasicSingleColumnForm() {
     return Column(
       children: [
         _buildNumberInputField(
@@ -757,6 +716,397 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
     );
   }
 
+  Widget _buildAdditionalDataCard() {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.add_circle, color: Colors.blue[700]),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Data Tambahan Omron HBF-375',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue[700],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 16),
+            
+            _buildNumberInputField(
+              controller: _subcutaneousFatController,
+              label: 'Subcutaneous Fat (%)',
+              icon: Icons.layers,
+              hint: 'Contoh: 15.2',
+              suffix: '%',
+            ),
+            
+            SizedBox(height: 8),
+            Text(
+              'Same Age Comparison akan dihitung otomatis berdasarkan Body Fat dan Usia',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSegmentalDataCard() {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.accessibility_new, color: Colors.purple[700]),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Data Segmental (Per Bagian Tubuh)',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.purple[700],
+                    ),
+                  ),
+                ),
+                Column(
+                  children: [
+                    Text('Auto Calc', style: TextStyle(fontSize: 10)),
+                    Switch(
+                      value: _autoCalculateSegmental,
+                      onChanged: (value) {
+                        setState(() {
+                          _autoCalculateSegmental = value;
+                          if (value) _calculateSegmentalData();
+                        });
+                      },
+                      activeColor: Colors.purple[700],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            SizedBox(height: 16),
+            
+            // Subcutaneous Fat Segmental
+            Text(
+              'Subcutaneous Fat per Segmen (%)',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.purple[700],
+              ),
+            ),
+            SizedBox(height: 8),
+            
+            LayoutBuilder(
+              builder: (context, constraints) {
+                if (constraints.maxWidth > 600) {
+                  return Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildNumberInputField(
+                              controller: _segSubTrunkController,
+                              label: 'Trunk',
+                              icon: Icons.airline_seat_recline_normal,
+                              hint: '0.0',
+                              suffix: '%',
+                              enabled: !_autoCalculateSegmental,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: _buildNumberInputField(
+                              controller: _segSubRightArmController,
+                              label: 'Right Arm',
+                              icon: Icons.pan_tool,
+                              hint: '0.0',
+                              suffix: '%',
+                              enabled: !_autoCalculateSegmental,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: _buildNumberInputField(
+                              controller: _segSubLeftArmController,
+                              label: 'Left Arm',
+                              icon: Icons.back_hand,
+                              hint: '0.0',
+                              suffix: '%',
+                              enabled: !_autoCalculateSegmental,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildNumberInputField(
+                              controller: _segSubRightLegController,
+                              label: 'Right Leg',
+                              icon: Icons.directions_walk,
+                              hint: '0.0',
+                              suffix: '%',
+                              enabled: !_autoCalculateSegmental,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: _buildNumberInputField(
+                              controller: _segSubLeftLegController,
+                              label: 'Left Leg',
+                              icon: Icons.directions_run,
+                              hint: '0.0',
+                              suffix: '%',
+                              enabled: !_autoCalculateSegmental,
+                            ),
+                          ),
+                          Expanded(child: SizedBox()), // Balance
+                        ],
+                      ),
+                    ],
+                  );
+                } else {
+                  return Column(
+                    children: [
+                      _buildNumberInputField(
+                        controller: _segSubTrunkController,
+                        label: 'Trunk',
+                        icon: Icons.airline_seat_recline_normal,
+                        hint: '0.0',
+                        suffix: '%',
+                        enabled: !_autoCalculateSegmental,
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildNumberInputField(
+                              controller: _segSubRightArmController,
+                              label: 'Right Arm',
+                              icon: Icons.pan_tool,
+                              hint: '0.0',
+                              suffix: '%',
+                              enabled: !_autoCalculateSegmental,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: _buildNumberInputField(
+                              controller: _segSubLeftArmController,
+                              label: 'Left Arm',
+                              icon: Icons.back_hand,
+                              hint: '0.0',
+                              suffix: '%',
+                              enabled: !_autoCalculateSegmental,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildNumberInputField(
+                              controller: _segSubRightLegController,
+                              label: 'Right Leg',
+                              icon: Icons.directions_walk,
+                              hint: '0.0',
+                              suffix: '%',
+                              enabled: !_autoCalculateSegmental,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: _buildNumberInputField(
+                              controller: _segSubLeftLegController,
+                              label: 'Left Leg',
+                              icon: Icons.directions_run,
+                              hint: '0.0',
+                              suffix: '%',
+                              enabled: !_autoCalculateSegmental,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  );
+                }
+              },
+            ),
+            
+            SizedBox(height: 16),
+            
+            // Skeletal Muscle Segmental
+            Text(
+              'Skeletal Muscle per Segmen (%)',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.purple[700],
+              ),
+            ),
+            SizedBox(height: 8),
+            
+            LayoutBuilder(
+              builder: (context, constraints) {
+                if (constraints.maxWidth > 600) {
+                  return Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildNumberInputField(
+                              controller: _segMusTrunkController,
+                              label: 'Trunk',
+                              icon: Icons.airline_seat_recline_normal,
+                              hint: '0.0',
+                              suffix: '%',
+                              enabled: !_autoCalculateSegmental,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: _buildNumberInputField(
+                              controller: _segMusRightArmController,
+                              label: 'Right Arm',
+                              icon: Icons.pan_tool,
+                              hint: '0.0',
+                              suffix: '%',
+                              enabled: !_autoCalculateSegmental,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: _buildNumberInputField(
+                              controller: _segMusLeftArmController,
+                              label: 'Left Arm',
+                              icon: Icons.back_hand,
+                              hint: '0.0',
+                              suffix: '%',
+                              enabled: !_autoCalculateSegmental,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildNumberInputField(
+                              controller: _segMusRightLegController,
+                              label: 'Right Leg',
+                              icon: Icons.directions_walk,
+                              hint: '0.0',
+                              suffix: '%',
+                              enabled: !_autoCalculateSegmental,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: _buildNumberInputField(
+                              controller: _segMusLeftLegController,
+                              label: 'Left Leg',
+                              icon: Icons.directions_run,
+                              hint: '0.0',
+                              suffix: '%',
+                              enabled: !_autoCalculateSegmental,
+                            ),
+                          ),
+                          Expanded(child: SizedBox()), // Balance
+                        ],
+                      ),
+                    ],
+                  );
+                } else {
+                  return Column(
+                    children: [
+                      _buildNumberInputField(
+                        controller: _segMusTrunkController,
+                        label: 'Trunk',
+                        icon: Icons.airline_seat_recline_normal,
+                        hint: '0.0',
+                        suffix: '%',
+                        enabled: !_autoCalculateSegmental,
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildNumberInputField(
+                              controller: _segMusRightArmController,
+                              label: 'Right Arm',
+                              icon: Icons.pan_tool,
+                              hint: '0.0',
+                              suffix: '%',
+                              enabled: !_autoCalculateSegmental,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: _buildNumberInputField(
+                              controller: _segMusLeftArmController,
+                              label: 'Left Arm',
+                              icon: Icons.back_hand,
+                              hint: '0.0',
+                              suffix: '%',
+                              enabled: !_autoCalculateSegmental,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildNumberInputField(
+                              controller: _segMusRightLegController,
+                              label: 'Right Leg',
+                              icon: Icons.directions_walk,
+                              hint: '0.0',
+                              suffix: '%',
+                              enabled: !_autoCalculateSegmental,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: _buildNumberInputField(
+                              controller: _segMusLeftLegController,
+                              label: 'Left Leg',
+                              icon: Icons.directions_run,
+                              hint: '0.0',
+                              suffix: '%',
+                              enabled: !_autoCalculateSegmental,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  );
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildNumberInputField({
     required TextEditingController controller,
     required String label,
@@ -775,7 +1125,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
           labelText: label,
           hintText: hint,
           suffixText: suffix,
-          prefixIcon: Icon(icon, color: Colors.orange[700]),
+          prefixIcon: Icon(icon, color: enabled ? Colors.orange[700] : Colors.grey[400]),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
           ),
@@ -838,6 +1188,9 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
           if (label.contains('Body Age') && (number < 18 || number > 80)) {
             return 'Body age harus antara 18-80 tahun';
           }
+          if (label.contains('Subcutaneous') && (number < 0 || number > 50)) {
+            return 'Subcutaneous fat harus antara 0-50%';
+          }
           
           return null;
         },
@@ -861,7 +1214,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
             )
           : Icon(Icons.calculate),
         label: Text(
-          _isLoading ? 'Menghitung...' : 'Hitung & Analisis',
+          _isLoading ? 'Menghitung...' : 'Hitung & Analisis (11 Fitur Lengkap)',
           style: TextStyle(fontSize: 16),
         ),
         style: ElevatedButton.styleFrom(
@@ -899,22 +1252,48 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
     });
 
     // Simulate processing time
-    await Future.delayed(Duration(milliseconds: 800));
+    await Future.delayed(Duration(milliseconds: 1000));
 
     try {
+      // Get segmental data
+      Map<String, double> segmentalSubcutaneous = {
+        'trunk': double.tryParse(_segSubTrunkController.text) ?? 0.0,
+        'rightArm': double.tryParse(_segSubRightArmController.text) ?? 0.0,
+        'leftArm': double.tryParse(_segSubLeftArmController.text) ?? 0.0,
+        'rightLeg': double.tryParse(_segSubRightLegController.text) ?? 0.0,
+        'leftLeg': double.tryParse(_segSubLeftLegController.text) ?? 0.0,
+      };
+
+      Map<String, double> segmentalSkeletal = {
+        'trunk': double.tryParse(_segMusTrunkController.text) ?? 0.0,
+        'rightArm': double.tryParse(_segMusRightArmController.text) ?? 0.0,
+        'leftArm': double.tryParse(_segMusLeftArmController.text) ?? 0.0,
+        'rightLeg': double.tryParse(_segMusRightLegController.text) ?? 0.0,
+        'leftLeg': double.tryParse(_segMusLeftLegController.text) ?? 0.0,
+      };
+
+      // Calculate same age comparison
+      final bodyFat = double.parse(_bodyFatController.text);
+      final age = int.parse(_ageController.text);
+      final sameAgeComparison = OmronData.calculateSameAgeComparison(bodyFat, age, _selectedGender);
+
       final omronData = OmronData(
         timestamp: DateTime.now(),
         patientName: _patientNameController.text.trim(),
-        age: int.parse(_ageController.text),
+        age: age,
         gender: _selectedGender,
         height: double.parse(_heightController.text),
         weight: double.parse(_weightController.text),
-        bodyFatPercentage: double.parse(_bodyFatController.text),
+        bodyFatPercentage: bodyFat,
         bmi: double.parse(_bmiController.text),
         skeletalMusclePercentage: double.parse(_skeletalMuscleController.text),
         visceralFatLevel: int.parse(_visceralFatController.text),
         restingMetabolism: int.parse(_restingMetabolismController.text),
         bodyAge: int.parse(_bodyAgeController.text),
+        subcutaneousFatPercentage: double.parse(_subcutaneousFatController.text),
+        segmentalSubcutaneousFat: segmentalSubcutaneous,
+        segmentalSkeletalMuscle: segmentalSkeletal,
+        sameAgeComparison: sameAgeComparison,
       );
 
       setState(() {
@@ -933,7 +1312,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
         });
       }
 
-      _showSuccessSnackBar('Analisis berhasil! ${MediaQuery.of(context).size.width <= 1200 ? 'Scroll ke bawah untuk melihat hasil.' : ''}');
+      _showSuccessSnackBar('Analisis berhasil! Semua 11 fitur Omron HBF-375 telah dihitung. ${MediaQuery.of(context).size.width <= 1200 ? 'Scroll ke bawah untuk melihat hasil.' : ''}');
 
     } catch (e) {
       setState(() {
@@ -980,7 +1359,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Data Omron HBF-516B berhasil disimpan!'),
+              Text('Data Omron HBF-375 berhasil disimpan! (11/11 Fitur)'),
               SizedBox(height: 16),
               Text(
                 'Pasien: ${_calculatedResult!.patientName}',
@@ -1021,10 +1400,111 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
     );
   }
 
+  void _showResultDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) {
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            // Responsive dialog sizing
+            double dialogWidth;
+            double dialogHeight;
+            
+            if (constraints.maxWidth > 1200) {
+              // Desktop
+              dialogWidth = constraints.maxWidth * 0.7;
+              dialogHeight = constraints.maxHeight * 0.8;
+            } else if (constraints.maxWidth > 800) {
+              // Tablet
+              dialogWidth = constraints.maxWidth * 0.85;
+              dialogHeight = constraints.maxHeight * 0.85;
+            } else {
+              // Mobile
+              dialogWidth = constraints.maxWidth * 0.95;
+              dialogHeight = constraints.maxHeight * 0.9;
+            }
+
+            return Dialog(
+              insetPadding: EdgeInsets.symmetric(
+                horizontal: (constraints.maxWidth - dialogWidth) / 2,
+                vertical: (constraints.maxHeight - dialogHeight) / 2,
+              ),
+              child: Container(
+                width: dialogWidth,
+                height: dialogHeight,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: Colors.white,
+                ),
+                child: Column(
+                  children: [
+                    // Header
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.orange[700],
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(12),
+                          topRight: Radius.circular(12),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.analytics,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Hasil Analisis Lengkap - ${_calculatedResult!.patientName}',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () => Navigator.pop(context),
+                            icon: const Icon(
+                              Icons.close,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Content
+                    Expanded(
+                      child: OmronResultCard(data: _calculatedResult!),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _shareResult() {
+    // Implementation for sharing result
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Fitur berbagi akan segera tersedia'),
+        backgroundColor: Colors.orange[700],
+      ),
+    );
+  }
+
   void _clearForm() {
     _formKey.currentState?.reset();
     
-    // Clear all controllers
+    // Clear all basic controllers
     _patientNameController.clear();
     _ageController.clear();
     _heightController.clear();
@@ -1036,10 +1516,27 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
     _restingMetabolismController.clear();
     _bodyAgeController.clear();
     
+    // Clear additional controllers
+    _subcutaneousFatController.clear();
+    
+    // Clear segmental controllers
+    _segSubTrunkController.clear();
+    _segSubRightArmController.clear();
+    _segSubLeftArmController.clear();
+    _segSubRightLegController.clear();
+    _segSubLeftLegController.clear();
+    _segMusTrunkController.clear();
+    _segMusRightArmController.clear();
+    _segMusLeftArmController.clear();
+    _segMusRightLegController.clear();
+    _segMusLeftLegController.clear();
+    
     setState(() {
       _selectedGender = 'Male';
       _calculatedResult = null;
       _autoCalculateBMI = true;
+      _autoCalculateSegmental = true;
+      _autoCalculateSameAge = true;
     });
 
     // Scroll to top
@@ -1099,6 +1596,8 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
   @override
   void dispose() {
     _scrollController.dispose();
+    
+    // Basic controllers
     _patientNameController.dispose();
     _ageController.dispose();
     _heightController.dispose();
@@ -1109,6 +1608,24 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
     _visceralFatController.dispose();
     _restingMetabolismController.dispose();
     _bodyAgeController.dispose();
+    
+    // Additional controllers
+    _subcutaneousFatController.dispose();
+    
+    // Segmental controllers - Subcutaneous Fat
+    _segSubTrunkController.dispose();
+    _segSubRightArmController.dispose();
+    _segSubLeftArmController.dispose();
+    _segSubRightLegController.dispose();
+    _segSubLeftLegController.dispose();
+    
+    // Segmental controllers - Skeletal Muscle
+    _segMusTrunkController.dispose();
+    _segMusRightArmController.dispose();
+    _segMusLeftArmController.dispose();
+    _segMusRightLegController.dispose();
+    _segMusLeftLegController.dispose();
+    
     super.dispose();
   }
 }

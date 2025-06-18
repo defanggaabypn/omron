@@ -75,6 +75,26 @@ lib/
 │   └── filter_dialog.dart       # Widget dialog filter
 └── main.dart                    # Entry point aplikasi
 
+📂 lib/
+├── 📂 models/
+│   └── 📄 omron_data.dart
+├── 📂 services/              ← FOLDER BARU
+│   ├── 📄 database_service.dart
+│   ├── 📄 pdf_service.dart      ← FILE BARU
+│   └── 
+            whatsapp_direct_service.dart
+├── 📂 screens/
+│   ├── 📄 omron_input_screen.dart
+│   ├── 📄 history_screen.dart
+│   └── 📄 analytics_screen.dart
+├── 📂 widgets/
+│   ├── 📄 patient_info_card.dart
+│   ├── 📄 omron_result_card.dart     ← UPDATED
+│   ├── 📄 omron_history_card.dart
+│   └── 📄 filter_dialog.dart
+            whatsapp_form_dialog
+└── 📄 main.dart
+
 next fitur, hasil analisis dikirimkan ke whatsapp services
 perbaikan hasil analisis di depan main 
 

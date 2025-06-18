@@ -1,23 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'dart:ui' as ui;
 import '../models/omron_data.dart';
+import '../services/pdf_service.dart';
+import '../widgets/whatsapp_form_dialog.dart';
 
-class OmronResultCard extends StatelessWidget {
+class OmronResultCard extends StatefulWidget {
   final OmronData data;
 
-  const OmronResultCard({Key? key, required this.data}) : super(key: key);
+  const OmronResultCard({super.key, required this.data});
+
+  @override
+  OmronResultCardState createState() => OmronResultCardState();
+}
+
+class OmronResultCardState extends State<OmronResultCard> with TickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 4, vsync: this);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Card(
       elevation: 4,
       color: Colors.green[50],
-      child: LayoutBuilder( // Gunakan LayoutBuilder untuk mendapatkan constraints
+      child: LayoutBuilder(
         builder: (context, constraints) {
           return SizedBox(
             height: constraints.maxHeight > 0 
                 ? constraints.maxHeight 
-                : MediaQuery.of(context).size.height * 0.7, // Fallback height
+                : MediaQuery.of(context).size.height * 0.7,
             child: Column(
               children: [
                 // Header yang tidak di-scroll
@@ -25,23 +41,32 @@ class OmronResultCard extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                   child: _buildHeader(),
                 ),
+                // Tab bar
+                Container(
+                  color: Colors.white,
+                  child: TabBar(
+                    controller: _tabController,
+                    labelColor: Colors.green[700],
+                    unselectedLabelColor: Colors.grey[600],
+                    indicatorColor: Colors.green[700],
+                    tabs: const [
+                      Tab(icon: Icon(Icons.assessment, size: 20), text: 'Basic'),
+                      Tab(icon: Icon(Icons.layers, size: 20), text: 'Advanced'),
+                      Tab(icon: Icon(Icons.accessibility_new, size: 20), text: 'Segmental'),
+                      Tab(icon: Icon(Icons.person, size: 20), text: 'Body Map'),
+                    ],
+                  ),
+                ),
                 // Content yang bisa di-scroll
                 Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildPatientInfo(),
-                        const SizedBox(height: 12),
-                        _buildMeasurements(),
-                        const SizedBox(height: 12),
-                        _buildAnalysis(),
-                        const SizedBox(height: 12),
-                        _buildRecommendations(),
-                        const SizedBox(height: 20), // Extra space di bawah
-                      ],
-                    ),
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildBasicTab(),
+                      _buildAdvancedTab(),
+                      _buildSegmentalTab(),
+                      _buildBodyMapTab(),
+                    ],
                   ),
                 ),
               ],
@@ -53,44 +78,87 @@ class OmronResultCard extends StatelessWidget {
   }
 
   Widget _buildHeader() {
-    return Row(
+    return Column(
       children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.green[100],
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(
-            Icons.analytics,
-            size: 28,
-            color: Colors.green[700],
-          ),
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.green[100],
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.analytics,
+                size: 28,
+                color: Colors.green[700],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Hasil Analisis Omron HBF-375',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green[700],
+                    ),
+                  ),
+                  Text(
+                    DateFormat('dd MMMM yyyy, HH:mm', 'id_ID').format(widget.data.timestamp),
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 12,
+                    ),
+                  ),
+                  Text(
+                    '11/11 Fitur Lengkap',
+                    style: TextStyle(
+                      color: Colors.green[600],
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            _buildOverallScoreBadge(),
+          ],
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Hasil Analisis Omron',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green[700],
+        const SizedBox(height: 12),
+        // Action buttons
+        Row(
+          children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: _exportToPDF,
+                icon: const Icon(Icons.picture_as_pdf, size: 18),
+                label: const Text('Export PDF', style: TextStyle(fontSize: 12)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red[600],
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
                 ),
               ),
-              Text(
-                DateFormat('dd MMMM yyyy, HH:mm', 'id_ID').format(data.timestamp),
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 12,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: _shareToWhatsApp,
+                icon: const Icon(Icons.share, size: 18),
+                label: const Text('Share WA', style: TextStyle(fontSize: 12)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green[600],
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-        _buildOverallScoreBadge(),
       ],
     );
   }
@@ -99,7 +167,7 @@ class OmronResultCard extends StatelessWidget {
     Color badgeColor;
     IconData badgeIcon;
     
-    switch (data.overallAssessment) {
+    switch (widget.data.overallAssessment) {
       case 'Excellent':
         badgeColor = Colors.green;
         badgeIcon = Icons.star;
@@ -129,13 +197,81 @@ class OmronResultCard extends StatelessWidget {
           Icon(badgeIcon, color: Colors.white, size: 14),
           const SizedBox(width: 4),
           Text(
-            data.overallAssessment,
+            widget.data.overallAssessment,
             style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
               fontSize: 11,
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBasicTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildPatientInfo(),
+          const SizedBox(height: 12),
+          _buildBasicMeasurements(),
+          const SizedBox(height: 12),
+          _buildBasicAnalysis(),
+          const SizedBox(height: 12),
+          _buildBasicRecommendations(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAdvancedTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildAdvancedMeasurements(),
+          const SizedBox(height: 12),
+          _buildSameAgeComparison(),
+          const SizedBox(height: 12),
+          _buildAdvancedAnalysis(),
+          const SizedBox(height: 12),
+          _buildAdvancedRecommendations(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSegmentalTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSegmentalSubcutaneousFat(),
+          const SizedBox(height: 16),
+          _buildSegmentalSkeletalMuscle(),
+          const SizedBox(height: 16),
+          _buildSegmentalAnalysis(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBodyMapTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildBodyVisualization(),
+          const SizedBox(height: 16),
+          _buildBodyMapLegend(),
+          const SizedBox(height: 16),
+          _buildBodyMapAnalysis(),
         ],
       ),
     );
@@ -158,14 +294,14 @@ class OmronResultCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  data.patientName,
+                  widget.data.patientName,
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 Text(
-                  '${data.age} tahun • ${data.gender == 'Male' ? 'Pria' : 'Wanita'} • ${data.height.toStringAsFixed(0)} cm',
+                  '${widget.data.age} tahun • ${widget.data.gender == 'Male' ? 'Pria' : 'Wanita'} • ${widget.data.height.toStringAsFixed(0)} cm',
                   style: TextStyle(
                     color: Colors.grey[600],
                     fontSize: 12,
@@ -179,12 +315,12 @@ class OmronResultCard extends StatelessWidget {
     );
   }
 
-  Widget _buildMeasurements() {
+  Widget _buildBasicMeasurements() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '📊 Hasil Pengukuran',
+          '📊 Pengukuran Dasar (7 Indikator)',
           style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.bold,
@@ -199,7 +335,7 @@ class OmronResultCard extends StatelessWidget {
                 Expanded(
                   child: _buildMeasurementTile(
                     'Berat Badan',
-                    '${data.weight.toStringAsFixed(1)} kg',
+                    '${widget.data.weight.toStringAsFixed(1)} kg',
                     Icons.scale,
                     Colors.blue,
                   ),
@@ -208,7 +344,7 @@ class OmronResultCard extends StatelessWidget {
                 Expanded(
                   child: _buildMeasurementTile(
                     'Body Fat',
-                    '${data.bodyFatPercentage.toStringAsFixed(1)}%',
+                    '${widget.data.bodyFatPercentage.toStringAsFixed(1)}%',
                     Icons.pie_chart,
                     Colors.orange,
                   ),
@@ -221,7 +357,7 @@ class OmronResultCard extends StatelessWidget {
                 Expanded(
                   child: _buildMeasurementTile(
                     'BMI',
-                    data.bmi.toStringAsFixed(1),
+                    widget.data.bmi.toStringAsFixed(1),
                     Icons.straighten,
                     Colors.purple,
                   ),
@@ -230,7 +366,7 @@ class OmronResultCard extends StatelessWidget {
                 Expanded(
                   child: _buildMeasurementTile(
                     'Skeletal Muscle',
-                    '${data.skeletalMusclePercentage.toStringAsFixed(1)}%',
+                    '${widget.data.skeletalMusclePercentage.toStringAsFixed(1)}%',
                     Icons.fitness_center,
                     Colors.red,
                   ),
@@ -243,7 +379,7 @@ class OmronResultCard extends StatelessWidget {
                 Expanded(
                   child: _buildMeasurementTile(
                     'Visceral Fat',
-                    data.visceralFatLevel.toString(),
+                    widget.data.visceralFatLevel.toString(),
                     Icons.favorite,
                     Colors.pink,
                   ),
@@ -252,7 +388,7 @@ class OmronResultCard extends StatelessWidget {
                 Expanded(
                   child: _buildMeasurementTile(
                     'Metabolism',
-                    '${data.restingMetabolism} kcal',
+                    '${widget.data.restingMetabolism} kcal',
                     Icons.local_fire_department,
                     Colors.deepOrange,
                   ),
@@ -262,7 +398,7 @@ class OmronResultCard extends StatelessWidget {
             const SizedBox(height: 8),
             _buildMeasurementTile(
               'Body Age',
-              '${data.bodyAge} tahun',
+              '${widget.data.bodyAge} tahun',
               Icons.schedule,
               Colors.teal,
               isFullWidth: true,
@@ -270,6 +406,370 @@ class OmronResultCard extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildAdvancedMeasurements() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '🔬 Pengukuran Lanjutan',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            color: Colors.blue[700],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: _buildMeasurementTile(
+                'Subcutaneous Fat',
+                '${widget.data.subcutaneousFatPercentage.toStringAsFixed(1)}%',
+                Icons.layers,
+                Colors.cyan,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildMeasurementTile(
+                'Same Age Rank',
+                '${widget.data.sameAgeComparison.toStringAsFixed(0)}th percentile',
+                Icons.compare,
+                Colors.indigo,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSameAgeComparison() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.indigo[200]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '👥 Perbandingan Usia Sebaya',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: Colors.indigo[700],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Posisi Anda:',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    Text(
+                      '${widget.data.sameAgeComparison.toStringAsFixed(0)}th Percentile',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.indigo[700],
+                      ),
+                    ),
+                    Text(
+                      widget.data.sameAgeCategory,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: _getSameAgeCategoryColor(widget.data.sameAgeCategory),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: _getSameAgeCategoryColor(widget.data.sameAgeCategory).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  _getSameAgeCategoryIcon(widget.data.sameAgeCategory),
+                  color: _getSameAgeCategoryColor(widget.data.sameAgeCategory),
+                  size: 32,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _getSameAgeDescription(widget.data.sameAgeComparison),
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[600],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSegmentalSubcutaneousFat() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '🫁 Subcutaneous Fat per Segmen',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            color: Colors.purple[700],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Column(
+          children: [
+            _buildSegmentalTile(
+              'Trunk (Batang Tubuh)',
+              '${widget.data.segmentalSubcutaneousFat['trunk']!.toStringAsFixed(1)}%',
+              Icons.airline_seat_recline_normal,
+              Colors.purple,
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildSegmentalTile(
+                    'Right Arm',
+                    '${widget.data.segmentalSubcutaneousFat['rightArm']!.toStringAsFixed(1)}%',
+                    Icons.pan_tool,
+                    Colors.purple,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildSegmentalTile(
+                    'Left Arm',
+                    '${widget.data.segmentalSubcutaneousFat['leftArm']!.toStringAsFixed(1)}%',
+                    Icons.back_hand,
+                    Colors.purple,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildSegmentalTile(
+                    'Right Leg',
+                    '${widget.data.segmentalSubcutaneousFat['rightLeg']!.toStringAsFixed(1)}%',
+                    Icons.directions_walk,
+                    Colors.purple,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildSegmentalTile(
+                    'Left Leg',
+                    '${widget.data.segmentalSubcutaneousFat['leftLeg']!.toStringAsFixed(1)}%',
+                    Icons.directions_run,
+                    Colors.purple,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSegmentalSkeletalMuscle() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '💪 Skeletal Muscle per Segmen',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            color: Colors.red[700],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Column(
+          children: [
+            _buildSegmentalTile(
+              'Trunk (Batang Tubuh)',
+              '${widget.data.segmentalSkeletalMuscle['trunk']!.toStringAsFixed(1)}%',
+              Icons.airline_seat_recline_normal,
+              Colors.red,
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildSegmentalTile(
+                    'Right Arm',
+                    '${widget.data.segmentalSkeletalMuscle['rightArm']!.toStringAsFixed(1)}%',
+                    Icons.pan_tool,
+                    Colors.red,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildSegmentalTile(
+                    'Left Arm',
+                    '${widget.data.segmentalSkeletalMuscle['leftArm']!.toStringAsFixed(1)}%',
+                    Icons.back_hand,
+                    Colors.red,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildSegmentalTile(
+                    'Right Leg',
+                    '${widget.data.segmentalSkeletalMuscle['rightLeg']!.toStringAsFixed(1)}%',
+                    Icons.directions_walk,
+                    Colors.red,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildSegmentalTile(
+                    'Left Leg',
+                    '${widget.data.segmentalSkeletalMuscle['leftLeg']!.toStringAsFixed(1)}%',
+                    Icons.directions_run,
+                    Colors.red,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBodyVisualization() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '🧍 Body Display Chart',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            color: Colors.teal[700],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          height: 300,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.teal[200]!),
+          ),
+          child: CustomPaint(
+            painter: BodyMapPainter(
+              data: widget.data,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBodyMapLegend() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.teal[200]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Keterangan Warna:',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.teal[700],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  children: [
+                    _buildLegendItem('Tinggi', Colors.red[700]!),
+                    _buildLegendItem('Sedang', Colors.orange[700]!),
+                    _buildLegendItem('Rendah', Colors.green[700]!),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  children: [
+                    _buildLegendItem('Fat Level', Colors.red[200]!),
+                    _buildLegendItem('Muscle Level', Colors.blue[200]!),
+                    _buildLegendItem('Normal', Colors.green[200]!),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLegendItem(String label, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Container(
+            width: 16,
+            height: 16,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[700],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -326,12 +826,53 @@ class OmronResultCard extends StatelessWidget {
     );
   }
 
-  Widget _buildAnalysis() {
+  Widget _buildSegmentalTile(String label, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Icon(icon, color: color, size: 14),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[700],
+              ),
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBasicAnalysis() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '🔍 Analisis Kesehatan',
+          '🔍 Analisis Dasar',
           style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.bold,
@@ -341,21 +882,142 @@ class OmronResultCard extends StatelessWidget {
         const SizedBox(height: 8),
         _buildAnalysisItem(
           'BMI Status',
-          data.bmiCategory,
-          _getBMICategoryColor(data.bmiCategory),
-          _getBMIDescription(data.bmiCategory),
+          widget.data.bmiCategory,
+          _getBMICategoryColor(widget.data.bmiCategory),
+          _getBMIDescription(widget.data.bmiCategory),
         ),
         _buildAnalysisItem(
           'Body Fat Status',
-          data.bodyFatCategory,
-          _getBodyFatCategoryColor(data.bodyFatCategory),
-          _getBodyFatDescription(data.bodyFatCategory),
+          widget.data.bodyFatCategory,
+          _getBodyFatCategoryColor(widget.data.bodyFatCategory),
+          _getBodyFatDescription(widget.data.bodyFatCategory),
         ),
         _buildAnalysisItem(
           'Visceral Fat',
-          _getVisceralFatCategory(data.visceralFatLevel),
-          _getVisceralFatColor(data.visceralFatLevel),
-          _getVisceralFatDescription(data.visceralFatLevel),
+          _getVisceralFatCategory(widget.data.visceralFatLevel),
+          _getVisceralFatColor(widget.data.visceralFatLevel),
+          _getVisceralFatDescription(widget.data.visceralFatLevel),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAdvancedAnalysis() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '🔬 Analisis Lanjutan',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            color: Colors.blue[700],
+          ),
+        ),
+        const SizedBox(height: 8),
+        _buildAnalysisItem(
+          'Subcutaneous Fat',
+          _getSubcutaneousFatCategory(widget.data.subcutaneousFatPercentage),
+          _getSubcutaneousFatColor(widget.data.subcutaneousFatPercentage),
+          _getSubcutaneousFatDescription(widget.data.subcutaneousFatPercentage),
+        ),
+        _buildAnalysisItem(
+          'Same Age Comparison',
+          widget.data.sameAgeCategory,
+          _getSameAgeCategoryColor(widget.data.sameAgeCategory),
+          _getSameAgeDescription(widget.data.sameAgeComparison),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSegmentalAnalysis() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '📊 Analisis Segmental',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            color: Colors.purple[700],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.purple[200]!),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Distribusi Lemak & Otot:',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.purple[700],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _getSegmentalAnalysis(),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBodyMapAnalysis() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '🧬 Analisis Body Map',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            color: Colors.teal[700],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.teal[200]!),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Interpretasi Visual:',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.teal[700],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _getBodyMapAnalysis(),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -427,12 +1089,12 @@ class OmronResultCard extends StatelessWidget {
     );
   }
 
-  Widget _buildRecommendations() {
+  Widget _buildBasicRecommendations() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '💡 Rekomendasi',
+          '💡 Rekomendasi Dasar',
           style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.bold,
@@ -449,23 +1111,52 @@ class OmronResultCard extends StatelessWidget {
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: _getRecommendations(),
+            children: _getBasicRecommendations(),
           ),
         ),
       ],
     );
   }
 
-  List<Widget> _getRecommendations() {
+  Widget _buildAdvancedRecommendations() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '🎯 Rekomendasi Lanjutan',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            color: Colors.blue[700],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.blue[200]!),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: _getAdvancedRecommendations(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _getBasicRecommendations() {
     List<Widget> recommendations = [];
     
     // BMI recommendations
-    if (data.bmi < 18.5) {
+    if (widget.data.bmi < 18.5) {
       recommendations.add(_buildRecommendationItem(
         '🍎 Tingkatkan asupan kalori dengan makanan bergizi',
         Colors.blue,
       ));
-    } else if (data.bmi >= 25.0) {
+    } else if (widget.data.bmi >= 25.0) {
       recommendations.add(_buildRecommendationItem(
         '🏃‍♂️ Perbanyak aktivitas fisik dan kurangi kalori',
         Colors.orange,
@@ -473,12 +1164,12 @@ class OmronResultCard extends StatelessWidget {
     }
     
     // Body fat recommendations
-    if (data.bodyFatPercentage > 25 && data.gender == 'Male') {
+    if (widget.data.bodyFatPercentage > 25 && widget.data.gender == 'Male') {
       recommendations.add(_buildRecommendationItem(
         '💪 Fokus pada latihan kardio dan strength training',
         Colors.red,
       ));
-    } else if (data.bodyFatPercentage > 32 && data.gender == 'Female') {
+    } else if (widget.data.bodyFatPercentage > 32 && widget.data.gender == 'Female') {
       recommendations.add(_buildRecommendationItem(
         '💪 Fokus pada latihan kardio dan strength training',
         Colors.red,
@@ -486,7 +1177,7 @@ class OmronResultCard extends StatelessWidget {
     }
     
     // Visceral fat recommendations
-    if (data.visceralFatLevel > 9) {
+    if (widget.data.visceralFatLevel > 9) {
       recommendations.add(_buildRecommendationItem(
         '❤️ Kurangi lemak visceral dengan diet seimbang',
         Colors.pink,
@@ -498,10 +1189,41 @@ class OmronResultCard extends StatelessWidget {
       '📅 Lakukan pengukuran rutin setiap minggu',
       Colors.green,
     ));
+
+    return recommendations;
+  }
+
+  List<Widget> _getAdvancedRecommendations() {
+    List<Widget> recommendations = [];
+    
+    // Subcutaneous fat recommendations
+    if (widget.data.subcutaneousFatPercentage > 20) {
+      recommendations.add(_buildRecommendationItem(
+        '🧘‍♀️ Kurangi lemak subkutan dengan yoga dan cardio',
+        Colors.purple,
+      ));
+    }
+    
+    // Same age comparison recommendations
+    if (widget.data.sameAgeComparison < 50) {
+      recommendations.add(_buildRecommendationItem(
+        '🎯 Tingkatkan program fitness untuk menyamai teman sebaya',
+        Colors.indigo,
+      ));
+    }
+    
+    // Segmental recommendations
+    final maxSegFat = widget.data.segmentalSubcutaneousFat.values.reduce((a, b) => a > b ? a : b);
+    if (maxSegFat > 15) {
+      recommendations.add(_buildRecommendationItem(
+        '🎯 Fokus latihan pada area dengan lemak tinggi',
+        Colors.red,
+      ));
+    }
     
     recommendations.add(_buildRecommendationItem(
       '👨‍⚕️ Konsultasikan dengan ahli gizi untuk program yang tepat',
-      Colors.purple,
+      Colors.blue,
     ));
 
     return recommendations;
@@ -537,7 +1259,7 @@ class OmronResultCard extends StatelessWidget {
     );
   }
 
-  // Helper methods tetap sama...
+  // Helper methods
   Color _getBMICategoryColor(String category) {
     switch (category) {
       case 'Normal': return Colors.green;
@@ -597,4 +1319,311 @@ class OmronResultCard extends StatelessWidget {
     if (level <= 14) return 'Level lemak visceral agak tinggi';
     return 'Level lemak visceral sangat tinggi';
   }
+
+  String _getSubcutaneousFatCategory(double percentage) {
+    if (percentage <= 10) return 'Low';
+    if (percentage <= 20) return 'Normal';
+    if (percentage <= 30) return 'High';
+    return 'Very High';
+  }
+
+  Color _getSubcutaneousFatColor(double percentage) {
+    if (percentage <= 10) return Colors.green;
+    if (percentage <= 20) return Colors.blue;
+    if (percentage <= 30) return Colors.orange;
+    return Colors.red;
+  }
+
+  String _getSubcutaneousFatDescription(double percentage) {
+    if (percentage <= 10) return 'Level lemak subkutan rendah';
+    if (percentage <= 20) return 'Level lemak subkutan normal';
+    if (percentage <= 30) return 'Level lemak subkutan tinggi';
+    return 'Level lemak subkutan sangat tinggi';
+  }
+
+  Color _getSameAgeCategoryColor(String category) {
+    switch (category) {
+      case 'Excellent': return Colors.green;
+      case 'Good': return Colors.blue;
+      case 'Average': return Colors.orange;
+      case 'Below Average': return Colors.red;
+      case 'Poor': return Colors.red[900]!;
+      default: return Colors.grey;
+    }
+  }
+
+  IconData _getSameAgeCategoryIcon(String category) {
+    switch (category) {
+      case 'Excellent': return Icons.star;
+      case 'Good': return Icons.thumb_up;
+      case 'Average': return Icons.remove;
+      case 'Below Average': return Icons.thumb_down;
+      case 'Poor': return Icons.warning;
+      default: return Icons.help;
+    }
+  }
+
+  String _getSameAgeDescription(double percentile) {
+    if (percentile >= 90) return 'Anda berada di 10% teratas untuk usia Anda';
+    if (percentile >= 75) return 'Anda berada di 25% teratas untuk usia Anda';
+    if (percentile >= 50) return 'Anda berada di rata-rata untuk usia Anda';
+    if (percentile >= 25) return 'Anda berada di bawah rata-rata untuk usia Anda';
+    return 'Anda berada di 25% terbawah untuk usia Anda';
+  }
+
+  String _getSegmentalAnalysis() {
+    final trunk = widget.data.segmentalSubcutaneousFat['trunk']!;
+    final arms = (widget.data.segmentalSubcutaneousFat['rightArm']! + widget.data.segmentalSubcutaneousFat['leftArm']!) / 2;
+    final legs = (widget.data.segmentalSubcutaneousFat['rightLeg']! + widget.data.segmentalSubcutaneousFat['leftLeg']!) / 2;
+    
+    String highestArea = 'trunk';
+    double highestValue = trunk;
+    
+    if (arms > highestValue) {
+      highestArea = 'lengan';
+      highestValue = arms;
+    }
+    if (legs > highestValue) {
+      highestArea = 'kaki';
+      highestValue = legs;
+    }
+    
+    return 'Area dengan lemak subkutan tertinggi adalah $highestArea (${highestValue.toStringAsFixed(1)}%). Fokuskan latihan pada area ini untuk hasil optimal.';
+  }
+
+  String _getBodyMapAnalysis() {
+    final bodyFat = widget.data.bodyFatPercentage;
+    final muscle = widget.data.skeletalMusclePercentage;
+    
+    if (bodyFat > 25 && muscle < 30) {
+      return 'Body map menunjukkan komposisi lemak tinggi dengan massa otot rendah. Direkomendasikan kombinasi latihan kardio dan resistance training.';
+    } else if (bodyFat < 15 && muscle > 40) {
+      return 'Body map menunjukkan komposisi tubuh yang sangat baik dengan lemak rendah dan massa otot tinggi. Pertahankan pola latihan dan nutrisi saat ini.';
+    } else {
+      return 'Body map menunjukkan komposisi tubuh yang seimbang. Lanjutkan program fitness dengan peningkatan bertahap.';
+    }
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  // PDF Export and WhatsApp Share methods - SUDAH DIPERBAIKI DENGAN MOUNTED CHECK
+  Future<void> _exportToPDF() async {
+    try {
+      // Show loading dialog
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      final String pdfPath = await PDFService.generateOmronReport(widget.data);
+      
+      // Close loading dialog dengan mounted check
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      
+      // Show success dialog dengan mounted check
+      if (!mounted) return;
+      _showSuccessDialog('PDF berhasil dibuat!', 'File disimpan di: $pdfPath');
+      
+    } catch (e) {
+      // Close loading dialog dengan mounted check
+      if (mounted) Navigator.of(context).pop();
+      
+      // Show error dialog dengan mounted check
+      if (mounted) _showErrorDialog('Gagal membuat PDF', e.toString());
+    }
+  }
+
+  Future<void> _shareToWhatsApp() async {
+    try {
+      // Show loading dialog
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      // Generate PDF first
+      final String pdfPath = await PDFService.generateOmronReport(widget.data);
+      
+      // Close loading dialog dengan mounted check
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      
+      // Show WhatsApp form dialog dengan mounted check
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (context) => WhatsAppFormDialog(
+          data: widget.data,
+          pdfPath: pdfPath,
+        ),
+      );
+      
+    } catch (e) {
+      // Close loading dialog dengan mounted check
+      if (mounted) Navigator.of(context).pop();
+      
+      // Show error dialog dengan mounted check
+      if (mounted) _showErrorDialog('Gagal membuat PDF', e.toString());
+    }
+  }
+
+  // METHOD _showSuccessDialog YANG HILANG - SUDAH DITAMBAHKAN
+  void _showSuccessDialog(String title, String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showErrorDialog(String title, String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Custom Painter untuk Body Map
+class BodyMapPainter extends CustomPainter {
+  final OmronData data;
+
+  const BodyMapPainter({required this.data});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..style = PaintingStyle.fill;
+    
+    // Draw simplified body outline
+    final center = Offset(size.width / 2, size.height / 2);
+    
+    // Head
+    paint.color = _getBodyPartColor(data.bodyFatPercentage);
+    canvas.drawCircle(Offset(center.dx, center.dy - size.height * 0.3), size.width * 0.08, paint);
+    
+    // Trunk
+    paint.color = _getBodyPartColor(data.segmentalSubcutaneousFat['trunk']!);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(
+          center: Offset(center.dx, center.dy - size.height * 0.1),
+          width: size.width * 0.3,
+          height: size.height * 0.35,
+        ),
+        const Radius.circular(15),
+      ),
+      paint,
+    );
+    
+    // Arms
+    paint.color = _getBodyPartColor(data.segmentalSubcutaneousFat['rightArm']!);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(
+          center: Offset(center.dx + size.width * 0.2, center.dy - size.height * 0.1),
+          width: size.width * 0.08,
+          height: size.height * 0.25,
+        ),
+        const Radius.circular(8),
+      ),
+      paint,
+    );
+    
+    paint.color = _getBodyPartColor(data.segmentalSubcutaneousFat['leftArm']!);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(
+          center: Offset(center.dx - size.width * 0.2, center.dy - size.height * 0.1),
+          width: size.width * 0.08,
+          height: size.height * 0.25,
+        ),
+        const Radius.circular(8),
+      ),
+      paint,
+    );
+    
+    // Legs
+    paint.color = _getBodyPartColor(data.segmentalSubcutaneousFat['rightLeg']!);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(
+          center: Offset(center.dx + size.width * 0.08, center.dy + size.height * 0.25),
+          width: size.width * 0.1,
+          height: size.height * 0.3,
+        ),
+        const Radius.circular(8),
+      ),
+      paint,
+    );
+    
+    paint.color = _getBodyPartColor(data.segmentalSubcutaneousFat['leftLeg']!);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(
+          center: Offset(center.dx - size.width * 0.08, center.dy + size.height * 0.25),
+          width: size.width * 0.1,
+          height: size.height * 0.3,
+        ),
+        const Radius.circular(8),
+      ),
+      paint,
+    );
+    
+    // Add labels
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: '${data.bodyFatPercentage.toStringAsFixed(1)}%',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      textDirection: ui.TextDirection.ltr,
+    );
+    textPainter.layout();
+    textPainter.paint(
+      canvas,
+      Offset(center.dx - textPainter.width / 2, center.dy - size.height * 0.1 - textPainter.height / 2),
+    );
+  }
+
+  Color _getBodyPartColor(double fatPercentage) {
+    if (fatPercentage <= 10) return Colors.green[700]!;
+    if (fatPercentage <= 20) return Colors.orange[700]!;
+    return Colors.red[700]!;
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
