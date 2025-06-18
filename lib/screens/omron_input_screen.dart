@@ -176,37 +176,40 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
         // Left side: Form
         Expanded(
           flex: 2,
-          child: SingleChildScrollView(
-            controller: _scrollController,
-            padding: EdgeInsets.all(16),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHeaderCard(),
-                  SizedBox(height: 16),
-                  PatientInfoCard(
-                    patientNameController: _patientNameController,
-                    ageController: _ageController,
-                    heightController: _heightController,
-                    selectedGender: _selectedGender,
-                    onGenderChanged: (value) {
-                      setState(() {
-                        _selectedGender = value!;
-                      });
-                    },
-                  ),
-                  SizedBox(height: 16),
-                  _buildBasicOmronDataCard(),
-                  SizedBox(height: 16),
-                  _buildAdditionalDataCard(),
-                  SizedBox(height: 16),
-                  _buildSegmentalDataCard(),
-                  SizedBox(height: 16),
-                  _buildCalculateButton(),
-                  SizedBox(height: 80), // Space for FAB
-                ],
+          child: Container(
+            height: MediaQuery.of(context).size.height - kToolbarHeight,
+            child: SingleChildScrollView(
+              controller: _scrollController,
+              padding: EdgeInsets.all(16),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeaderCard(),
+                    SizedBox(height: 16),
+                    PatientInfoCard(
+                      patientNameController: _patientNameController,
+                      ageController: _ageController,
+                      heightController: _heightController,
+                      selectedGender: _selectedGender,
+                      onGenderChanged: (value) {
+                        setState(() {
+                          _selectedGender = value!;
+                        });
+                      },
+                    ),
+                    SizedBox(height: 16),
+                    _buildBasicOmronDataCard(),
+                    SizedBox(height: 16),
+                    _buildAdditionalDataCard(),
+                    SizedBox(height: 16),
+                    _buildSegmentalDataCard(),
+                    SizedBox(height: 16),
+                    _buildCalculateButton(),
+                    SizedBox(height: 80), // Space for FAB
+                  ],
+                ),
               ),
             ),
           ),
@@ -219,8 +222,11 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
               height: MediaQuery.of(context).size.height - kToolbarHeight,
               padding: EdgeInsets.all(16),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Header untuk result
                   Container(
+                    width: double.infinity,
                     padding: EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: Colors.green[100],
@@ -232,20 +238,57 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                         Icon(Icons.check_circle, color: Colors.green[700]),
                         SizedBox(width: 8),
                         Expanded(
-                          child: Text(
-                            'Analisis Berhasil! (11/11 Fitur Lengkap)',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.green[700],
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Analisis Berhasil! (11/11 Fitur Lengkap)',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green[700],
+                                ),
+                              ),
+                              Text(
+                                'Hasil untuk ${_calculatedResult!.patientName}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.green[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        ElevatedButton.icon(
+                          onPressed: _saveData,
+                          icon: Icon(Icons.save, size: 16),
+                          label: Text('Simpan'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green[700],
+                            foregroundColor: Colors.white,
                           ),
                         ),
                       ],
                     ),
                   ),
                   SizedBox(height: 16),
+                  // Result content
                   Expanded(
-                    child: OmronResultCard(data: _calculatedResult!),
+                    child: Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.1),
+                            spreadRadius: 1,
+                            blurRadius: 4,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: _buildSafeResultCard(),
+                    ),
                   ),
                 ],
               ),
@@ -353,7 +396,12 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
   }
 
   Widget _buildResultSection() {
+    if (_calculatedResult == null) {
+      return SizedBox.shrink();
+    }
+
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         // Success notification
         Container(
@@ -364,44 +412,73 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Colors.green[300]!),
           ),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.check_circle, color: Colors.green[700]),
-              SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
+              Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.green[700]),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
                       'Analisis Berhasil! (11/11 Fitur Lengkap)',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Colors.green[700],
                       ),
                     ),
-                    Text(
-                      'Hasil analisis untuk ${_calculatedResult!.patientName}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.green[600],
-                      ),
-                    ),
-                  ],
+                  ),
+                ],
+              ),
+              SizedBox(height: 4),
+              Text(
+                'Hasil analisis untuk ${_calculatedResult!.patientName}',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.green[600],
                 ),
               ),
-              // Quick actions
+              SizedBox(height: 8),
+              // Action buttons row
               Row(
-                mainAxisSize: MainAxisSize.min,
                 children: [
+                  Expanded(
+                    child: Container(
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.orange[100],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.orange[300]!),
+                      ),
+                      child: Text(
+                        '⚠️ Belum Disimpan',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.orange[700],
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  ElevatedButton.icon(
+                    onPressed: _saveData,
+                    icon: Icon(Icons.save, size: 16),
+                    label: Text('Simpan', style: TextStyle(fontSize: 12)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green[700],
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      minimumSize: Size(0, 32),
+                    ),
+                  ),
+                  SizedBox(width: 4),
                   IconButton(
                     onPressed: () => _showResultDialog(),
-                    icon: Icon(Icons.fullscreen, color: Colors.green[700]),
-                    tooltip: 'Lihat Fullscreen',
-                  ),
-                  IconButton(
-                    onPressed: () => _shareResult(),
-                    icon: Icon(Icons.share, color: Colors.green[700]),
-                    tooltip: 'Bagikan',
+                    icon: Icon(Icons.fullscreen, color: Colors.green[700], size: 20),
+                    tooltip: 'Fullscreen',
+                    constraints: BoxConstraints(minWidth: 32, minHeight: 32),
                   ),
                 ],
               ),
@@ -409,9 +486,40 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
           ),
         ),
         SizedBox(height: 16),
-        // Result card
-        OmronResultCard(data: _calculatedResult!),
+        // Result card dengan pembungkus yang aman
+        Container(
+          width: double.infinity,
+          constraints: BoxConstraints(
+            minHeight: 200,
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
+          ),
+          child: _buildSafeResultCard(),
+        ),
       ],
+    );
+  }
+
+  Widget _buildSafeResultCard() {
+    if (_calculatedResult == null) {
+      return Container(
+        padding: EdgeInsets.all(20),
+        child: Center(
+          child: Text('Tidak ada data untuk ditampilkan'),
+        ),
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Container(
+          width: constraints.maxWidth,
+          constraints: BoxConstraints(
+            minHeight: 200,
+            maxHeight: constraints.maxHeight,
+          ),
+          child: OmronResultCard(data: _calculatedResult!),
+        );
+      },
     );
   }
 
@@ -837,9 +945,9 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                           SizedBox(width: 8),
                           Expanded(
                             child: _buildNumberInputField(
-                              controller: _segSubRightArmController,
+                                                            controller: _segSubRightArmController,
                               label: 'Right Arm',
-                              icon: Icons.pan_tool,
+                              icon: Icons.back_hand,
                               hint: '0.0',
                               suffix: '%',
                               enabled: !_autoCalculateSegmental,
@@ -850,7 +958,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                             child: _buildNumberInputField(
                               controller: _segSubLeftArmController,
                               label: 'Left Arm',
-                              icon: Icons.back_hand,
+                              icon: Icons.front_hand,
                               hint: '0.0',
                               suffix: '%',
                               enabled: !_autoCalculateSegmental,
@@ -881,7 +989,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                               enabled: !_autoCalculateSegmental,
                             ),
                           ),
-                          Expanded(child: SizedBox()), // Balance
+                          Expanded(child: SizedBox()), // Empty space for balance
                         ],
                       ),
                     ],
@@ -903,7 +1011,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                             child: _buildNumberInputField(
                               controller: _segSubRightArmController,
                               label: 'Right Arm',
-                              icon: Icons.pan_tool,
+                              icon: Icons.back_hand,
                               hint: '0.0',
                               suffix: '%',
                               enabled: !_autoCalculateSegmental,
@@ -914,7 +1022,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                             child: _buildNumberInputField(
                               controller: _segSubLeftArmController,
                               label: 'Left Arm',
-                              icon: Icons.back_hand,
+                              icon: Icons.front_hand,
                               hint: '0.0',
                               suffix: '%',
                               enabled: !_autoCalculateSegmental,
@@ -953,7 +1061,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
               },
             ),
             
-            SizedBox(height: 16),
+            SizedBox(height: 24),
             
             // Skeletal Muscle Segmental
             Text(
@@ -988,7 +1096,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                             child: _buildNumberInputField(
                               controller: _segMusRightArmController,
                               label: 'Right Arm',
-                              icon: Icons.pan_tool,
+                              icon: Icons.back_hand,
                               hint: '0.0',
                               suffix: '%',
                               enabled: !_autoCalculateSegmental,
@@ -999,7 +1107,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                             child: _buildNumberInputField(
                               controller: _segMusLeftArmController,
                               label: 'Left Arm',
-                              icon: Icons.back_hand,
+                              icon: Icons.front_hand,
                               hint: '0.0',
                               suffix: '%',
                               enabled: !_autoCalculateSegmental,
@@ -1030,7 +1138,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                               enabled: !_autoCalculateSegmental,
                             ),
                           ),
-                          Expanded(child: SizedBox()), // Balance
+                          Expanded(child: SizedBox()), // Empty space for balance
                         ],
                       ),
                     ],
@@ -1052,7 +1160,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                             child: _buildNumberInputField(
                               controller: _segMusRightArmController,
                               label: 'Right Arm',
-                              icon: Icons.pan_tool,
+                              icon: Icons.back_hand,
                               hint: '0.0',
                               suffix: '%',
                               enabled: !_autoCalculateSegmental,
@@ -1063,7 +1171,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                             child: _buildNumberInputField(
                               controller: _segMusLeftArmController,
                               label: 'Left Arm',
-                              icon: Icons.back_hand,
+                              icon: Icons.front_hand,
                               hint: '0.0',
                               suffix: '%',
                               enabled: !_autoCalculateSegmental,
@@ -1111,7 +1219,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
     required TextEditingController controller,
     required String label,
     required IconData icon,
-    required String hint,
+    String? hint,
     String? suffix,
     bool isInteger = false,
     bool enabled = true,
@@ -1121,11 +1229,18 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
       child: TextFormField(
         controller: controller,
         enabled: enabled,
+        keyboardType: TextInputType.numberWithOptions(decimal: !isInteger),
+        inputFormatters: [
+          if (isInteger)
+            FilteringTextInputFormatter.digitsOnly
+          else
+            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+        ],
         decoration: InputDecoration(
           labelText: label,
           hintText: hint,
+          prefixIcon: Icon(icon, color: enabled ? Colors.orange[700] : Colors.grey),
           suffixText: suffix,
-          prefixIcon: Icon(icon, color: enabled ? Colors.orange[700] : Colors.grey[400]),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
           ),
@@ -1133,65 +1248,22 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
             borderRadius: BorderRadius.circular(8),
             borderSide: BorderSide(color: Colors.orange[700]!, width: 2),
           ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: Colors.grey[300]!),
-          ),
-          disabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: Colors.grey[200]!),
-          ),
-          filled: !enabled,
-          fillColor: Colors.grey[50],
+          filled: true,
+          fillColor: enabled ? Colors.white : Colors.grey[100],
         ),
-        keyboardType: TextInputType.numberWithOptions(
-          decimal: !isInteger,
-        ),
-        inputFormatters: [
-          if (isInteger)
-            FilteringTextInputFormatter.digitsOnly
-          else
-            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
-        ],
         validator: (value) {
-          if (value?.isEmpty ?? true) {
-            return '$label harus diisi';
+          if (value == null || value.isEmpty) {
+            return 'Field ini wajib diisi';
           }
-          
-          final number = isInteger 
-            ? int.tryParse(value!) 
-            : double.tryParse(value!);
-            
-          if (number == null) {
-            return 'Format angka tidak valid';
+          if (isInteger) {
+            if (int.tryParse(value) == null) {
+              return 'Masukkan angka yang valid';
+            }
+          } else {
+            if (double.tryParse(value) == null) {
+              return 'Masukkan angka yang valid';
+            }
           }
-          
-          // Validation ranges
-          if (label.contains('Berat') && (number < 20 || number > 300)) {
-            return 'Berat badan harus antara 20-300 kg';
-          }
-          if (label.contains('Body Fat') && (number < 0 || number > 60)) {
-            return 'Body fat harus antara 0-60%';
-          }
-          if (label.contains('BMI') && (number < 10 || number > 50)) {
-            return 'BMI harus antara 10-50';
-          }
-          if (label.contains('Skeletal') && (number < 0 || number > 70)) {
-            return 'Skeletal muscle harus antara 0-70%';
-          }
-          if (label.contains('Visceral') && (number < 1 || number > 30)) {
-            return 'Visceral fat harus antara 1-30';
-          }
-          if (label.contains('Metabolism') && (number < 800 || number > 4000)) {
-            return 'Resting metabolism harus antara 800-4000 kcal';
-          }
-          if (label.contains('Body Age') && (number < 18 || number > 80)) {
-            return 'Body age harus antara 18-80 tahun';
-          }
-          if (label.contains('Subcutaneous') && (number < 0 || number > 50)) {
-            return 'Subcutaneous fat harus antara 0-50%';
-          }
-          
           return null;
         },
       ),
@@ -1199,30 +1271,31 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
   }
 
   Widget _buildCalculateButton() {
-    return SizedBox(
+    return Container(
       width: double.infinity,
+      height: 56,
       child: ElevatedButton.icon(
         onPressed: _isLoading ? null : _calculateResult,
-        icon: _isLoading 
-          ? SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
-            )
-          : Icon(Icons.calculate),
+        icon: _isLoading
+            ? SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : Icon(Icons.calculate, size: 24),
         label: Text(
-          _isLoading ? 'Menghitung...' : 'Hitung & Analisis (11 Fitur Lengkap)',
-          style: TextStyle(fontSize: 16),
+          _isLoading ? 'Menghitung...' : 'Hitung & Analisis (11 Fitur)',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.orange[700],
           foregroundColor: Colors.white,
-          padding: EdgeInsets.symmetric(vertical: 16),
+          elevation: 4,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
       ),
@@ -1232,12 +1305,24 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
   Widget _buildFloatingActionButton() {
     return FloatingActionButton.extended(
       onPressed: _calculatedResult != null ? _saveData : null,
-      icon: Icon(Icons.save),
-      label: Text('Simpan Data'),
+      icon: _isLoading 
+        ? SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            ),
+          )
+        : Icon(Icons.save),
+      label: Text(_isLoading ? 'Menyimpan...' : 'Simpan Data'),
       backgroundColor: _calculatedResult != null 
         ? Colors.green[700] 
         : Colors.grey[400],
       foregroundColor: Colors.white,
+      tooltip: _calculatedResult != null 
+        ? 'Simpan hasil analisis ke database'
+        : 'Hitung analisis terlebih dahulu',
     );
   }
 
@@ -1249,12 +1334,13 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
 
     setState(() {
       _isLoading = true;
+      _calculatedResult = null; // Clear previous result
     });
 
-    // Simulate processing time
-    await Future.delayed(Duration(milliseconds: 1000));
-
     try {
+      // Simulate processing time
+      await Future.delayed(Duration(milliseconds: 1000));
+
       // Get segmental data
       Map<String, double> segmentalSubcutaneous = {
         'trunk': double.tryParse(_segSubTrunkController.text) ?? 0.0,
@@ -1296,34 +1382,50 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
         sameAgeComparison: sameAgeComparison,
       );
 
-      setState(() {
-        _calculatedResult = omronData;
-        _isLoading = false;
-      });
-
-      // Scroll to result for mobile/tablet layout
-      if (MediaQuery.of(context).size.width <= 1200) {
-        Future.delayed(Duration(milliseconds: 300), () {
-          _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
-            duration: Duration(milliseconds: 500),
-            curve: Curves.easeInOut,
-          );
+      // Set result dengan setState yang aman
+      if (mounted) {
+        setState(() {
+          _calculatedResult = omronData;
+          _isLoading = false;
         });
+
+        // Scroll dengan delay untuk memastikan widget sudah ter-render
+        Future.delayed(Duration(milliseconds: 500), () {
+          if (mounted && MediaQuery.of(context).size.width <= 1200) {
+            _scrollController.animateTo(
+              _scrollController.position.maxScrollExtent,
+              duration: Duration(milliseconds: 500),
+              curve: Curves.easeInOut,
+            );
+          }
+        });
+
+        _showSuccessSnackBar(
+          'Analisis berhasil! Semua 11 fitur Omron HBF-375 telah dihitung. '
+          'Klik tombol "Simpan Data" untuk menyimpan ke database.'
+        );
       }
 
-      _showSuccessSnackBar('Analisis berhasil! Semua 11 fitur Omron HBF-375 telah dihitung. ${MediaQuery.of(context).size.width <= 1200 ? 'Scroll ke bawah untuk melihat hasil.' : ''}');
-
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      _showErrorSnackBar('Terjadi kesalahan saat menghitung: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _calculatedResult = null;
+        });
+        _showErrorSnackBar('Terjadi kesalahan saat menghitung: $e');
+      }
     }
   }
 
   Future<void> _saveData() async {
-    if (_calculatedResult == null) return;
+    if (_calculatedResult == null) {
+      _showErrorSnackBar('Tidak ada data untuk disimpan. Silakan hitung terlebih dahulu.');
+      return;
+    }
+
+    // Konfirmasi sebelum menyimpan
+    final shouldSave = await _showSaveConfirmation();
+    if (!shouldSave) return;
 
     try {
       setState(() {
@@ -1338,8 +1440,8 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
 
       _showSuccessSnackBar('Data berhasil disimpan dengan ID: $id');
       
-      // Show save confirmation dialog
-      _showSaveConfirmationDialog();
+      // Show save success dialog
+      _showSaveSuccessDialog();
       
     } catch (e) {
       setState(() {
@@ -1349,7 +1451,87 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
     }
   }
 
-  void _showSaveConfirmationDialog() {
+  Future<bool> _showSaveConfirmation() async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          icon: Icon(Icons.save, color: Colors.orange[700], size: 48),
+          title: Text('Konfirmasi Simpan'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Apakah Anda yakin ingin menyimpan data ini?'),
+              SizedBox(height: 16),
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey[300]!),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.person, size: 16, color: Colors.grey[600]),
+                        SizedBox(width: 4),
+                        Text(
+                          'Pasien: ${_calculatedResult!.patientName}',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
+                        SizedBox(width: 4),
+                        Text(
+                          'Tanggal: ${DateFormat('dd/MM/yyyy HH:mm').format(_calculatedResult!.timestamp)}',
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Icons.assessment, size: 16, color: Colors.grey[600]),
+                        SizedBox(width: 4),
+                        Text(
+                          'Status: Analisis Lengkap (11/11 Fitur)',
+                          style: TextStyle(color: Colors.green[700], fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text('Batal'),
+            ),
+            ElevatedButton.icon(
+              onPressed: () => Navigator.of(context).pop(true),
+              icon: Icon(Icons.save),
+              label: Text('Ya, Simpan'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green[700],
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        );
+      },
+    ) ?? false;
+  }
+
+  void _showSaveSuccessDialog() {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -1361,13 +1543,31 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
             children: [
               Text('Data Omron HBF-375 berhasil disimpan! (11/11 Fitur)'),
               SizedBox(height: 16),
-              Text(
-                'Pasien: ${_calculatedResult!.patientName}',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              Text(
-                'Tanggal: ${DateFormat('dd/MM/yyyy HH:mm').format(_calculatedResult!.timestamp)}',
-                style: TextStyle(color: Colors.grey[600]),
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green[200]!),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Pasien: ${_calculatedResult!.patientName}',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      'Tanggal: ${DateFormat('dd/MM/yyyy HH:mm').format(_calculatedResult!.timestamp)}',
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      '✅ Data tersimpan di database lokal',
+                      style: TextStyle(color: Colors.green[700], fontSize: 12),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -1390,7 +1590,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
               onPressed: () => Navigator.of(context).pop(),
               child: Text('OK'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange[700],
+                backgroundColor: Colors.green[700],
                 foregroundColor: Colors.white,
               ),
             ),
@@ -1401,36 +1601,26 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
   }
 
   void _showResultDialog() {
+    if (_calculatedResult == null) return;
+
     showDialog(
       context: context,
       barrierDismissible: true,
       builder: (context) {
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            // Responsive dialog sizing
-            double dialogWidth;
-            double dialogHeight;
-            
-            if (constraints.maxWidth > 1200) {
-              // Desktop
-              dialogWidth = constraints.maxWidth * 0.7;
-              dialogHeight = constraints.maxHeight * 0.8;
-            } else if (constraints.maxWidth > 800) {
-              // Tablet
-              dialogWidth = constraints.maxWidth * 0.85;
-              dialogHeight = constraints.maxHeight * 0.85;
-            } else {
-              // Mobile
-              dialogWidth = constraints.maxWidth * 0.95;
-              dialogHeight = constraints.maxHeight * 0.9;
-            }
+        return Dialog(
+          insetPadding: EdgeInsets.all(16),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              // Responsive dialog sizing
+              double dialogWidth = constraints.maxWidth > 1200 
+                  ? constraints.maxWidth * 0.7
+                  : constraints.maxWidth > 800 
+                      ? constraints.maxWidth * 0.85
+                      : constraints.maxWidth * 0.95;
+              
+              double dialogHeight = constraints.maxHeight * 0.9;
 
-            return Dialog(
-              insetPadding: EdgeInsets.symmetric(
-                horizontal: (constraints.maxWidth - dialogWidth) / 2,
-                vertical: (constraints.maxHeight - dialogHeight) / 2,
-              ),
-              child: Container(
+              return Container(
                 width: dialogWidth,
                 height: dialogHeight,
                 decoration: BoxDecoration(
@@ -1441,26 +1631,23 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                   children: [
                     // Header
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      width: double.infinity,
+                      padding: EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: Colors.orange[700],
-                        borderRadius: const BorderRadius.only(
+                        borderRadius: BorderRadius.only(
                           topLeft: Radius.circular(12),
                           topRight: Radius.circular(12),
                         ),
                       ),
                       child: Row(
                         children: [
-                          Icon(
-                            Icons.analytics,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                          const SizedBox(width: 12),
+                          Icon(Icons.analytics, color: Colors.white, size: 24),
+                          SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'Hasil Analisis Lengkap - ${_calculatedResult!.patientName}',
-                              style: const TextStyle(
+                              'Hasil Analisis - ${_calculatedResult!.patientName}',
+                              style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
@@ -1469,42 +1656,40 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                           ),
                           IconButton(
                             onPressed: () => Navigator.pop(context),
-                            icon: const Icon(
-                              Icons.close,
-                              color: Colors.white,
-                            ),
+                            icon: Icon(Icons.close, color: Colors.white),
                           ),
                         ],
                       ),
                     ),
                     // Content
                     Expanded(
-                      child: OmronResultCard(data: _calculatedResult!),
+                      child: Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.all(16),
+                        child: _buildSafeResultCard(),
+                      ),
                     ),
                   ],
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         );
       },
     );
   }
 
-  void _shareResult() {
-    // Implementation for sharing result
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Fitur berbagi akan segera tersedia'),
-        backgroundColor: Colors.orange[700],
-      ),
+  void _scrollToFirstError() {
+    // Find first error and scroll to it
+    _scrollController.animateTo(
+      0,
+      duration: Duration(milliseconds: 500),
+      curve: Curves.easeInOut,
     );
   }
 
   void _clearForm() {
-    _formKey.currentState?.reset();
-    
-    // Clear all basic controllers
+    // Clear all controllers
     _patientNameController.clear();
     _ageController.clear();
     _heightController.clear();
@@ -1515,8 +1700,6 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
     _visceralFatController.clear();
     _restingMetabolismController.clear();
     _bodyAgeController.clear();
-    
-    // Clear additional controllers
     _subcutaneousFatController.clear();
     
     // Clear segmental controllers
@@ -1525,34 +1708,44 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
     _segSubLeftArmController.clear();
     _segSubRightLegController.clear();
     _segSubLeftLegController.clear();
+    
     _segMusTrunkController.clear();
     _segMusRightArmController.clear();
     _segMusLeftArmController.clear();
     _segMusRightLegController.clear();
     _segMusLeftLegController.clear();
-    
+
     setState(() {
       _selectedGender = 'Male';
       _calculatedResult = null;
-      _autoCalculateBMI = true;
-      _autoCalculateSegmental = true;
-      _autoCalculateSameAge = true;
+      _isLoading = false;
     });
-
-    // Scroll to top
-    _scrollController.animateTo(
-      0,
-      duration: Duration(milliseconds: 500),
-      curve: Curves.easeInOut,
-    );
   }
 
-  void _scrollToFirstError() {
-    _scrollController.animateTo(
-      0,
-      duration: Duration(milliseconds: 500),
-      curve: Curves.easeInOut,
-    );
+  void _shareResult() {
+    if (_calculatedResult == null) return;
+    
+    // Implement share functionality
+    // You can use share_plus package for this
+    final shareText = '''
+Hasil Analisis Omron HBF-375 - ${_calculatedResult!.patientName}
+Tanggal: ${DateFormat('dd/MM/yyyy HH:mm').format(_calculatedResult!.timestamp)}
+
+📊 Data Lengkap (11 Fitur):
+• Berat Badan: ${_calculatedResult!.weight} kg
+• Body Fat: ${_calculatedResult!.bodyFatPercentage}%
+• BMI: ${_calculatedResult!.bmi}
+• Skeletal Muscle: ${_calculatedResult!.skeletalMusclePercentage}%
+• Visceral Fat: ${_calculatedResult!.visceralFatLevel}
+• Metabolism: ${_calculatedResult!.restingMetabolism} kcal
+• Body Age: ${_calculatedResult!.bodyAge} tahun
+• Subcutaneous Fat: ${_calculatedResult!.subcutaneousFatPercentage}%
+
+Generated by LSHC Omron App
+    ''';
+    
+    // For now, just show a snackbar
+    _showSuccessSnackBar('Fitur share akan segera tersedia!');
   }
 
   void _showSuccessSnackBar(String message) {
@@ -1570,6 +1763,12 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),
+        duration: Duration(seconds: 4),
+        action: _calculatedResult != null ? SnackBarAction(
+          label: 'SIMPAN',
+          textColor: Colors.white,
+          onPressed: _saveData,
+        ) : null,
       ),
     );
   }
@@ -1589,15 +1788,14 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),
+        duration: Duration(seconds: 3),
       ),
     );
   }
 
   @override
   void dispose() {
-    _scrollController.dispose();
-    
-    // Basic controllers
+    // Dispose all controllers
     _patientNameController.dispose();
     _ageController.dispose();
     _heightController.dispose();
@@ -1608,24 +1806,22 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
     _visceralFatController.dispose();
     _restingMetabolismController.dispose();
     _bodyAgeController.dispose();
-    
-    // Additional controllers
     _subcutaneousFatController.dispose();
     
-    // Segmental controllers - Subcutaneous Fat
     _segSubTrunkController.dispose();
     _segSubRightArmController.dispose();
     _segSubLeftArmController.dispose();
     _segSubRightLegController.dispose();
     _segSubLeftLegController.dispose();
     
-    // Segmental controllers - Skeletal Muscle
     _segMusTrunkController.dispose();
     _segMusRightArmController.dispose();
     _segMusLeftArmController.dispose();
     _segMusRightLegController.dispose();
     _segMusLeftLegController.dispose();
     
+    _scrollController.dispose();
     super.dispose();
   }
 }
+
