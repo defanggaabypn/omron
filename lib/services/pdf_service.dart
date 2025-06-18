@@ -52,7 +52,7 @@ class PDFService {
                   ),
                   pw.SizedBox(height: 10),
                   pw.Text(
-                    'Body Composition Monitor - 11 Fitur Lengkap',
+                    'Body Composition Monitor - Lampung Sport Health Center',
                     style: pw.TextStyle(
                       fontSize: 14,
                       color: PdfColors.white,

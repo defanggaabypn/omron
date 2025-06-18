@@ -129,7 +129,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           Text(
-            'Body Composition Monitor - 11 Fitur Lengkap',
+            'Body Composition Monitor',
             style: TextStyle(fontSize: 12, color: Colors.white70),
           ),
         ],
