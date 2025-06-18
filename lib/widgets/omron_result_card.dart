@@ -114,6 +114,24 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
                       fontSize: 12,
                     ),
                   ),
+                  // TAMPILKAN WHATSAPP JIKA ADA
+                  if (widget.data.whatsappNumber != null && widget.data.whatsappNumber!.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Icon(Icons.chat, size: 12, color: Colors.green[600]),
+                        const SizedBox(width: 4),
+                        Text(
+                          widget.data.whatsappNumber!,
+                          style: TextStyle(
+                            color: Colors.green[600],
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                   Text(
                     '11/11 Fitur Lengkap',
                     style: TextStyle(
@@ -129,38 +147,91 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
           ],
         ),
         const SizedBox(height: 12),
-        // Action buttons
-        Row(
-          children: [
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: _exportToPDF,
-                icon: const Icon(Icons.picture_as_pdf, size: 18),
-                label: const Text('Export PDF', style: TextStyle(fontSize: 12)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red[600],
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: _shareToWhatsApp,
-                icon: const Icon(Icons.share, size: 18),
-                label: const Text('Share WA', style: TextStyle(fontSize: 12)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green[600],
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                ),
-              ),
-            ),
-          ],
-        ),
+        // Action buttons - UPDATED DENGAN LOGIKA WHATSAPP
+        _buildActionButtons(),
       ],
     );
+  }
+
+  Widget _buildActionButtons() {
+    final bool hasWhatsApp = widget.data.whatsappNumber != null && widget.data.whatsappNumber!.isNotEmpty;
+    
+    if (hasWhatsApp) {
+      // Jika ada nomor WhatsApp: tampilkan 3 tombol
+      return Row(
+        children: [
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: _exportToPDF,
+              icon: const Icon(Icons.picture_as_pdf, size: 16),
+              label: const Text('PDF', style: TextStyle(fontSize: 11)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red[600],
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 6),
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: _shareToWhatsApp,
+              icon: const Icon(Icons.chat, size: 16),
+              label: const Text('WA', style: TextStyle(fontSize: 11)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green[600],
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 6),
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: _shareGeneral,
+              icon: const Icon(Icons.share, size: 16),
+              label: const Text('Share', style: TextStyle(fontSize: 11)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue[600],
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 6),
+              ),
+            ),
+          ),
+        ],
+      );
+    } else {
+      // Jika tidak ada nomor WhatsApp: tampilkan 2 tombol biasa
+      return Row(
+        children: [
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: _exportToPDF,
+              icon: const Icon(Icons.picture_as_pdf, size: 18),
+              label: const Text('Export PDF', style: TextStyle(fontSize: 12)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red[600],
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: _shareGeneral,
+              icon: const Icon(Icons.share, size: 18),
+              label: const Text('Share', style: TextStyle(fontSize: 12)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green[600],
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
   }
 
   Widget _buildOverallScoreBadge() {
@@ -307,6 +378,24 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
                     fontSize: 12,
                   ),
                 ),
+                // TAMPILKAN WHATSAPP DI PATIENT INFO JIKA ADA
+                if (widget.data.whatsappNumber != null && widget.data.whatsappNumber!.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Icon(Icons.chat, size: 14, color: Colors.green[600]),
+                      const SizedBox(width: 4),
+                      Text(
+                        'WA: ${widget.data.whatsappNumber}',
+                        style: TextStyle(
+                          color: Colors.green[600],
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
@@ -1404,13 +1493,92 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
     }
   }
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
+  // METHOD BARU UNTUK WHATSAPP DENGAN NOMOR OTOMATIS
+  Future<void> _shareToWhatsApp() async {
+    if (widget.data.whatsappNumber == null || widget.data.whatsappNumber!.isEmpty) {
+      _showErrorDialog('Nomor WhatsApp Tidak Tersedia', 
+          'Data ini tidak memiliki nomor WhatsApp. Gunakan tombol Share untuk berbagi secara umum.');
+      return;
+    }
+
+    try {
+      // Show loading dialog
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      // Generate PDF first
+      final String pdfPath = await PDFService.generateOmronReport(widget.data);
+      
+      // Close loading dialog dengan mounted check
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      
+      // Show WhatsApp form dialog dengan nomor sudah terisi
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (context) => WhatsAppFormDialog(
+          data: widget.data,
+          pdfPath: pdfPath,
+          prefilledNumber: widget.data.whatsappNumber, // PARAMETER BARU
+        ),
+      );
+      
+    } catch (e) {
+      // Close loading dialog dengan mounted check
+      if (mounted) Navigator.of(context).pop();
+      
+      // Show error dialog dengan mounted check
+      if (mounted) _showErrorDialog('Gagal membuat PDF', e.toString());
+    }
   }
 
-  // PDF Export and WhatsApp Share methods - SUDAH DIPERBAIKI DENGAN MOUNTED CHECK
+  // METHOD UNTUK SHARE UMUM (TANPA WHATSAPP KHUSUS)
+  Future<void> _shareGeneral() async {
+    try {
+      // Show loading dialog
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      // Generate PDF first
+      final String pdfPath = await PDFService.generateOmronReport(widget.data);
+      
+      // Close loading dialog dengan mounted check
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      
+      // Show WhatsApp form dialog tanpa nomor terisi
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (context) => WhatsAppFormDialog(
+          data: widget.data,
+          pdfPath: pdfPath,
+        ),
+      );
+      
+    } catch (e) {
+      // Close loading dialog dengan mounted check
+      if (mounted) Navigator.of(context).pop();
+      
+      // Show error dialog dengan mounted check
+      if (mounted) _showErrorDialog('Gagal membuat PDF', e.toString());
+    }
+  }
+
+  // PDF Export method - SAMA SEPERTI ASLI
   Future<void> _exportToPDF() async {
     try {
       // Show loading dialog
@@ -1442,45 +1610,6 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
     }
   }
 
-  Future<void> _shareToWhatsApp() async {
-    try {
-      // Show loading dialog
-      if (!mounted) return;
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-
-      // Generate PDF first
-      final String pdfPath = await PDFService.generateOmronReport(widget.data);
-      
-      // Close loading dialog dengan mounted check
-      if (!mounted) return;
-      Navigator.of(context).pop();
-      
-      // Show WhatsApp form dialog dengan mounted check
-      if (!mounted) return;
-      showDialog(
-        context: context,
-        builder: (context) => WhatsAppFormDialog(
-          data: widget.data,
-          pdfPath: pdfPath,
-        ),
-      );
-      
-    } catch (e) {
-      // Close loading dialog dengan mounted check
-      if (mounted) Navigator.of(context).pop();
-      
-      // Show error dialog dengan mounted check
-      if (mounted) _showErrorDialog('Gagal membuat PDF', e.toString());
-    }
-  }
-
-  // METHOD _showSuccessDialog YANG HILANG - SUDAH DITAMBAHKAN
   void _showSuccessDialog(String title, String message) {
     showDialog(
       context: context,
@@ -1511,6 +1640,12 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 }
 

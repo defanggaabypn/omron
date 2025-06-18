@@ -6,11 +6,13 @@ import '../services/whatsapp_direct_service.dart';
 class WhatsAppFormDialog extends StatefulWidget {
   final OmronData data;
   final String? pdfPath;
+  final String? prefilledNumber; // PARAMETER BARU UNTUK NOMOR YANG SUDAH ADA
 
   const WhatsAppFormDialog({
     super.key,
     required this.data,
     this.pdfPath,
+    this.prefilledNumber, // PARAMETER BARU
   });
 
   @override
@@ -51,7 +53,28 @@ class _WhatsAppFormDialogState extends State<WhatsAppFormDialog> {
   };
 
   @override
+  void initState() {
+    super.initState();
+    // ISI NOMOR OTOMATIS JIKA ADA PREFILLED NUMBER
+    if (widget.prefilledNumber != null && widget.prefilledNumber!.isNotEmpty) {
+      _phoneController.text = _formatPhoneForDisplay(widget.prefilledNumber!);
+    }
+  }
+
+  // METHOD UNTUK FORMAT NOMOR TELEPON UNTUK DISPLAY
+  String _formatPhoneForDisplay(String phoneNumber) {
+    // Remove country code if exists
+    String cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d]'), '');
+    if (cleanNumber.startsWith('62')) {
+      cleanNumber = '0${cleanNumber.substring(2)}';
+    }
+    return cleanNumber;
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final bool hasPrefilledNumber = widget.prefilledNumber != null && widget.prefilledNumber!.isNotEmpty;
+    
     return Dialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
@@ -65,28 +88,28 @@ class _WhatsAppFormDialogState extends State<WhatsAppFormDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
+              // Header - UPDATED DENGAN INFO PREFILLED
               Row(
                 children: [
-               Container(
-  padding: const EdgeInsets.all(8),
-  decoration: BoxDecoration(
-    color: Colors.green[100],
-    borderRadius: BorderRadius.circular(8),
-  ),
-  child: Icon(
-    Icons.chat, // Ganti dari Icons.whatsapp ke Icons.chat
-    color: Colors.green[700],
-    size: 24,
-  ),
-),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.green[100],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.chat,
+                      color: Colors.green[700],
+                      size: 24,
+                    ),
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Kirim ke WhatsApp',
+                          hasPrefilledNumber ? 'Kirim ke WhatsApp' : 'Kirim ke WhatsApp',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -94,10 +117,13 @@ class _WhatsAppFormDialogState extends State<WhatsAppFormDialog> {
                           ),
                         ),
                         Text(
-                          'Laporan: ${widget.data.patientName}',
+                          hasPrefilledNumber 
+                            ? 'Laporan: ${widget.data.patientName} (Auto-filled)'
+                            : 'Laporan: ${widget.data.patientName}',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey[600],
+                            color: hasPrefilledNumber ? Colors.green[600] : Colors.grey[600],
+                            fontWeight: hasPrefilledNumber ? FontWeight.w600 : FontWeight.normal,
                           ),
                         ),
                       ],
@@ -111,6 +137,35 @@ class _WhatsAppFormDialogState extends State<WhatsAppFormDialog> {
               ),
               
               const SizedBox(height: 20),
+              
+              // INFO BANNER JIKA ADA PREFILLED NUMBER
+              if (hasPrefilledNumber) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.green[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.green[200]!),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.green[700], size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Nomor WhatsApp sudah terisi otomatis dari data pasien. Anda dapat mengubahnya jika diperlukan.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.green[700],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
               
               // Phone Number Input
               Text(
@@ -126,9 +181,17 @@ class _WhatsAppFormDialogState extends State<WhatsAppFormDialog> {
               TextFormField(
                 controller: _phoneController,
                 decoration: InputDecoration(
-                  hintText: 'Contoh: 08123456789 atau 628123456789',
-                  prefixIcon: Icon(Icons.phone, color: Colors.green[700]),
+                  hintText: hasPrefilledNumber 
+                    ? 'Nomor sudah terisi otomatis'
+                    : 'Contoh: 08123456789 atau 628123456789',
+                  prefixIcon: Icon(
+                    Icons.phone, 
+                    color: hasPrefilledNumber ? Colors.green[700] : Colors.grey[600],
+                  ),
                   prefixText: '+62 ',
+                  suffixIcon: hasPrefilledNumber
+                    ? Icon(Icons.check_circle, color: Colors.green[600], size: 20)
+                    : null,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -136,6 +199,8 @@ class _WhatsAppFormDialogState extends State<WhatsAppFormDialog> {
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide(color: Colors.green[700]!, width: 2),
                   ),
+                  fillColor: hasPrefilledNumber ? Colors.green[25] : null,
+                  filled: hasPrefilledNumber,
                 ),
                 keyboardType: TextInputType.phone,
                 inputFormatters: [
@@ -230,7 +295,7 @@ class _WhatsAppFormDialogState extends State<WhatsAppFormDialog> {
               
               const SizedBox(height: 20),
               
-              // Action Buttons
+              // Action Buttons - UPDATED DENGAN INDIKATOR PREFILLED
               Row(
                 children: [
                   Expanded(
@@ -249,10 +314,25 @@ class _WhatsAppFormDialogState extends State<WhatsAppFormDialog> {
                             height: 16,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Icon(Icons.send, size: 18),
-                      label: Text(_isLoading ? 'Mengirim...' : 'Kirim'),
+                        : Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.send, size: 18),
+                              if (hasPrefilledNumber) ...[
+                                const SizedBox(width: 4),
+                                Icon(Icons.flash_on, size: 14, color: Colors.yellow[200]),
+                              ],
+                            ],
+                          ),
+                      label: Text(
+                        _isLoading 
+                          ? 'Mengirim...' 
+                          : hasPrefilledNumber 
+                            ? 'Kirim Cepat' 
+                            : 'Kirim'
+                      ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green[700],
+                        backgroundColor: hasPrefilledNumber ? Colors.green[600] : Colors.green[700],
                         foregroundColor: Colors.white,
                       ),
                     ),
@@ -262,12 +342,14 @@ class _WhatsAppFormDialogState extends State<WhatsAppFormDialog> {
               
               const SizedBox(height: 8),
               
-              // Info text
+              // Info text - UPDATED
               Text(
-                'Caption akan dikirim ke WhatsApp, PDF dapat dibagikan secara terpisah',
+                hasPrefilledNumber
+                  ? 'Nomor sudah terisi dari data pasien. Caption akan dikirim ke WhatsApp, PDF dapat dibagikan secara terpisah'
+                  : 'Caption akan dikirim ke WhatsApp, PDF dapat dibagikan secara terpisah',
                 style: TextStyle(
                   fontSize: 11,
-                  color: Colors.grey[500],
+                  color: hasPrefilledNumber ? Colors.green[600] : Colors.grey[500],
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -278,34 +360,34 @@ class _WhatsAppFormDialogState extends State<WhatsAppFormDialog> {
     );
   }
 
-void _previewCaption() {
-  final String caption = WhatsAppDirectService.generateCaption( // Hilangkan underscore
-    widget.data,
-    _selectedCaptionType,
-  );
-  
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text('Preview Caption - ${_captionTypes[_selectedCaptionType]!['title']}'),
-      content: Container(
-        constraints: const BoxConstraints(maxHeight: 400),
-        child: SingleChildScrollView(
-          child: SelectableText(
-            caption,
-            style: const TextStyle(fontSize: 12),
+  void _previewCaption() {
+    final String caption = WhatsAppDirectService.generateCaption(
+      widget.data,
+      _selectedCaptionType,
+    );
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Preview Caption - ${_captionTypes[_selectedCaptionType]!['title']}'),
+        content: Container(
+          constraints: const BoxConstraints(maxHeight: 400),
+          child: SingleChildScrollView(
+            child: SelectableText(
+              caption,
+              style: const TextStyle(fontSize: 12),
+            ),
           ),
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('OK'),
-        ),
-      ],
-    ),
-  );
-}
+    );
+  }
 
   Future<void> _copyCaption() async {
     try {
@@ -341,7 +423,12 @@ void _previewCaption() {
       
       if (mounted) {
         Navigator.pop(context);
-        _showSuccessSnackBar('WhatsApp terbuka dengan caption! PDF dapat dibagikan secara terpisah.');
+        final bool hasPrefilledNumber = widget.prefilledNumber != null && widget.prefilledNumber!.isNotEmpty;
+        _showSuccessSnackBar(
+          hasPrefilledNumber 
+            ? 'WhatsApp terbuka dengan caption ke nomor tersimpan! PDF dapat dibagikan secara terpisah.'
+            : 'WhatsApp terbuka dengan caption! PDF dapat dibagikan secara terpisah.'
+        );
       }
     } catch (e) {
       _showErrorSnackBar('Gagal mengirim: $e');

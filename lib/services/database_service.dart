@@ -22,7 +22,7 @@ class DatabaseService {
     String path = join(await getDatabasesPath(), 'omron_hbf375.db');
     return await openDatabase(
       path,
-      version: 2, // Increased version untuk update schema
+      version: 3, // NAIK VERSION UNTUK UPDATE SCHEMA DENGAN WHATSAPP
       onCreate: _createDatabase,
       onUpgrade: _upgradeDatabase,
     );
@@ -34,6 +34,7 @@ class DatabaseService {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         timestamp INTEGER NOT NULL,
         patientName TEXT NOT NULL,
+        whatsappNumber TEXT, -- FIELD BARU UNTUK NOMOR WHATSAPP
         age INTEGER NOT NULL,
         gender TEXT NOT NULL,
         height REAL NOT NULL,
@@ -55,6 +56,7 @@ class DatabaseService {
     await db.execute('CREATE INDEX idx_patient_name ON omron_data(patientName)');
     await db.execute('CREATE INDEX idx_timestamp ON omron_data(timestamp)');
     await db.execute('CREATE INDEX idx_patient_timestamp ON omron_data(patientName, timestamp)');
+    await db.execute('CREATE INDEX idx_whatsapp ON omron_data(whatsappNumber)'); // INDEX BARU
   }
 
   Future<void> _upgradeDatabase(Database db, int oldVersion, int newVersion) async {
@@ -64,12 +66,18 @@ class DatabaseService {
       await db.execute('ALTER TABLE omron_data ADD COLUMN segmentalSubcutaneousFat TEXT NOT NULL DEFAULT \'{"trunk": 0.0, "rightArm": 0.0, "leftArm": 0.0, "rightLeg": 0.0, "leftLeg": 0.0}\'');
       await db.execute('ALTER TABLE omron_data ADD COLUMN segmentalSkeletalMuscle TEXT NOT NULL DEFAULT \'{"trunk": 0.0, "rightArm": 0.0, "leftArm": 0.0, "rightLeg": 0.0, "leftLeg": 0.0}\'');
       await db.execute('ALTER TABLE omron_data ADD COLUMN sameAgeComparison REAL NOT NULL DEFAULT 50.0');
-      
-      // Create new indexes
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_patient_name ON omron_data(patientName)');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_timestamp ON omron_data(timestamp)');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_patient_timestamp ON omron_data(patientName, timestamp)');
     }
+    
+    if (oldVersion < 3) {
+      // Add WhatsApp column for version 3
+      await db.execute('ALTER TABLE omron_data ADD COLUMN whatsappNumber TEXT');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_whatsapp ON omron_data(whatsappNumber)');
+    }
+    
+    // Create indexes if they don't exist
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_patient_name ON omron_data(patientName)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_timestamp ON omron_data(timestamp)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_patient_timestamp ON omron_data(patientName, timestamp)');
   }
 
   // Insert new Omron data
@@ -99,6 +107,36 @@ class DatabaseService {
       where: 'patientName = ?',
       whereArgs: [patientName],
       orderBy: 'timestamp DESC',
+    );
+
+    return List.generate(maps.length, (i) {
+      return OmronData.fromMap(maps[i]);
+    });
+  }
+
+  // METODE BARU: Get Omron data by WhatsApp number
+  Future<List<OmronData>> getOmronDataByWhatsApp(String whatsappNumber) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'omron_data',
+      where: 'whatsappNumber = ?',
+      whereArgs: [whatsappNumber],
+      orderBy: 'timestamp DESC',
+    );
+
+    return List.generate(maps.length, (i) {
+      return OmronData.fromMap(maps[i]);
+    });
+  }
+
+  // METODE BARU: Get latest data with WhatsApp number
+  Future<List<OmronData>> getLatestDataWithWhatsApp({int limit = 20}) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'omron_data',
+      where: 'whatsappNumber IS NOT NULL AND whatsappNumber != ""',
+      orderBy: 'timestamp DESC',
+      limit: limit,
     );
 
     return List.generate(maps.length, (i) {
@@ -192,6 +230,17 @@ class DatabaseService {
     );
   }
 
+  // METODE BARU: Update WhatsApp number for existing patient
+  Future<int> updateWhatsAppNumber(String patientName, String? whatsappNumber) async {
+    final db = await database;
+    return await db.update(
+      'omron_data',
+      {'whatsappNumber': whatsappNumber},
+      where: 'patientName = ?',
+      whereArgs: [patientName],
+    );
+  }
+
   // Delete Omron data
   Future<int> deleteOmronData(int id) async {
     final db = await database;
@@ -224,6 +273,41 @@ class DatabaseService {
     });
   }
 
+  // METODE BARU: Get all unique WhatsApp numbers
+  Future<List<String>> getWhatsAppNumbers() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.rawQuery(
+      'SELECT DISTINCT whatsappNumber FROM omron_data WHERE whatsappNumber IS NOT NULL AND whatsappNumber != "" ORDER BY whatsappNumber ASC'
+    );
+
+    return List.generate(maps.length, (i) {
+      return maps[i]['whatsappNumber'] as String;
+    });
+  }
+
+  // METODE BARU: Get patient info with WhatsApp
+  Future<List<Map<String, dynamic>>> getPatientsWithWhatsApp() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+      SELECT 
+        patientName,
+        whatsappNumber,
+        COUNT(*) as recordCount,
+        MAX(timestamp) as lastRecord
+      FROM omron_data 
+      WHERE whatsappNumber IS NOT NULL AND whatsappNumber != ""
+      GROUP BY patientName, whatsappNumber
+      ORDER BY lastRecord DESC
+    ''');
+
+    return maps.map((map) => {
+      'patientName': map['patientName'] as String,
+      'whatsappNumber': map['whatsappNumber'] as String,
+      'recordCount': map['recordCount'] as int,
+      'lastRecord': DateTime.fromMillisecondsSinceEpoch(map['lastRecord'] as int),
+    }).toList();
+  }
+
   // Get patient statistics
   Future<Map<String, dynamic>> getPatientStatistics(String patientName) async {
     final db = await database;
@@ -242,9 +326,11 @@ class DatabaseService {
         AVG(skeletalMusclePercentage) as avg_muscle,
         AVG(visceralFatLevel) as avg_visceral_fat,
         AVG(subcutaneousFatPercentage) as avg_subcutaneous_fat,
-        AVG(sameAgeComparison) as avg_same_age_comparison
+        AVG(sameAgeComparison) as avg_same_age_comparison,
+        whatsappNumber
       FROM omron_data 
       WHERE patientName = ?
+      GROUP BY whatsappNumber
     ''', [patientName]);
 
     if (countResult.isNotEmpty) {
@@ -266,6 +352,7 @@ class DatabaseService {
         'avgVisceralFat': (result['avg_visceral_fat'] as double?)?.toDouble() ?? 0.0,
         'avgSubcutaneousFat': (result['avg_subcutaneous_fat'] as double?)?.toDouble() ?? 0.0,
         'avgSameAgeComparison': (result['avg_same_age_comparison'] as double?)?.toDouble() ?? 50.0,
+        'whatsappNumber': result['whatsappNumber'] as String?,
       };
     }
     
@@ -282,6 +369,7 @@ class DatabaseService {
       'avgVisceralFat': 0.0,
       'avgSubcutaneousFat': 0.0,
       'avgSameAgeComparison': 50.0,
+      'whatsappNumber': null,
     };
   }
 
@@ -293,6 +381,7 @@ class DatabaseService {
       SELECT 
         COUNT(*) as total_records,
         COUNT(DISTINCT patientName) as total_patients,
+        COUNT(DISTINCT whatsappNumber) as total_whatsapp,
         MIN(timestamp) as first_record,
         MAX(timestamp) as last_record,
         AVG(weight) as avg_weight,
@@ -310,6 +399,7 @@ class DatabaseService {
       return {
         'totalRecords': stats['total_records'] as int,
         'totalPatients': stats['total_patients'] as int,
+        'totalWhatsApp': stats['total_whatsapp'] as int, // STATISTIK BARU
         'firstRecord': stats['first_record'] != null 
           ? DateTime.fromMillisecondsSinceEpoch(stats['first_record'] as int)
           : null,
@@ -329,6 +419,7 @@ class DatabaseService {
     return {
       'totalRecords': 0,
       'totalPatients': 0,
+      'totalWhatsApp': 0,
       'firstRecord': null,
       'lastRecord': null,
       'avgWeight': 0.0,
@@ -341,9 +432,10 @@ class DatabaseService {
     };
   }
 
-  // Search functionality
+  // Search functionality - UPDATED UNTUK WHATSAPP
   Future<List<OmronData>> searchOmronData({
     String? patientName,
+    String? whatsappNumber, // PARAMETER BARU
     double? minWeight,
     double? maxWeight,
     double? minBmi,
@@ -364,6 +456,11 @@ class DatabaseService {
     if (patientName != null && patientName.isNotEmpty) {
       conditions.add('patientName LIKE ?');
       args.add('%$patientName%');
+    }
+    
+    if (whatsappNumber != null && whatsappNumber.isNotEmpty) {
+      conditions.add('whatsappNumber LIKE ?');
+      args.add('%$whatsappNumber%');
     }
     
     if (minWeight != null) {
@@ -434,7 +531,7 @@ class DatabaseService {
     });
   }
 
-  // Export data as CSV string
+  // Export data as CSV string - UPDATED UNTUK WHATSAPP
   Future<String> exportDataAsCSV({String? patientName}) async {
     List<OmronData> data;
     
@@ -446,8 +543,8 @@ class DatabaseService {
     
     StringBuffer csv = StringBuffer();
     
-    // CSV Header
-    csv.writeln('ID,Timestamp,Patient Name,Age,Gender,Height,Weight,Body Fat %,BMI,'
+    // CSV Header - TAMBAH WHATSAPP COLUMN
+    csv.writeln('ID,Timestamp,Patient Name,WhatsApp Number,Age,Gender,Height,Weight,Body Fat %,BMI,'
         'Skeletal Muscle %,Visceral Fat Level,Resting Metabolism,Body Age,'
         'Subcutaneous Fat %,Trunk Sub Fat,Right Arm Sub Fat,Left Arm Sub Fat,'
         'Right Leg Sub Fat,Left Leg Sub Fat,Trunk Muscle,Right Arm Muscle,'
@@ -457,7 +554,8 @@ class DatabaseService {
     // CSV Data
     for (OmronData item in data) {
       csv.writeln('${item.id},${item.timestamp.toIso8601String()},'
-          '"${item.patientName}",${item.age},"${item.gender}",${item.height},'
+          '"${item.patientName}","${item.whatsappNumber ?? ''}",'  // TAMBAH WHATSAPP DATA
+          '${item.age},"${item.gender}",${item.height},'
           '${item.weight},${item.bodyFatPercentage},${item.bmi},'
           '${item.skeletalMusclePercentage},${item.visceralFatLevel},'
           '${item.restingMetabolism},${item.bodyAge},${item.subcutaneousFatPercentage},'

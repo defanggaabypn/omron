@@ -2,6 +2,7 @@ class OmronData {
   final int? id;
   final DateTime timestamp;
   final String patientName;
+  final String? whatsappNumber; // FIELD BARU UNTUK NOMOR WA
   final int age;
   final String gender;
   final double height;
@@ -31,6 +32,7 @@ class OmronData {
     this.id,
     required this.timestamp,
     required this.patientName,
+    this.whatsappNumber, // PARAMETER BARU
     required this.age,
     required this.gender,
     required this.height,
@@ -147,6 +149,7 @@ class OmronData {
       'id': id,
       'timestamp': timestamp.millisecondsSinceEpoch,
       'patientName': patientName,
+      'whatsappNumber': whatsappNumber, // FIELD BARU DALAM MAP
       'age': age,
       'gender': gender,
       'height': height,
@@ -170,6 +173,7 @@ class OmronData {
       id: map['id'],
       timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp']),
       patientName: map['patientName'],
+      whatsappNumber: map['whatsappNumber'], // AMBIL DARI MAP
       age: map['age'],
       gender: map['gender'],
       height: map['height'],
@@ -192,6 +196,7 @@ class OmronData {
     int? id,
     DateTime? timestamp,
     String? patientName,
+    String? whatsappNumber, // PARAMETER BARU
     int? age,
     String? gender,
     double? height,
@@ -211,6 +216,7 @@ class OmronData {
       id: id ?? this.id,
       timestamp: timestamp ?? this.timestamp,
       patientName: patientName ?? this.patientName,
+      whatsappNumber: whatsappNumber ?? this.whatsappNumber, // COPYWITH SUPPORT
       age: age ?? this.age,
       gender: gender ?? this.gender,
       height: height ?? this.height,

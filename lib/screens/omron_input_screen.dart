@@ -18,6 +18,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
   
   // Patient Info Controllers
   final _patientNameController = TextEditingController();
+  final _whatsappController = TextEditingController(); // CONTROLLER BARU UNTUK WHATSAPP
   final _ageController = TextEditingController();
   final _heightController = TextEditingController();
   
@@ -114,7 +115,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
       backgroundColor: Colors.grey[50],
       appBar: _buildAppBar(),
       body: _buildResponsiveBody(),
-      floatingActionButton: _buildFloatingActionButton(),
+      // FAB dihilangkan - tombol simpan hanya muncul setelah analisis
     );
   }
 
@@ -190,6 +191,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                     SizedBox(height: 16),
                     PatientInfoCard(
                       patientNameController: _patientNameController,
+                      whatsappController: _whatsappController, // PARAMETER BARU
                       ageController: _ageController,
                       heightController: _heightController,
                       selectedGender: _selectedGender,
@@ -207,7 +209,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                     _buildSegmentalDataCard(),
                     SizedBox(height: 16),
                     _buildCalculateButton(),
-                    SizedBox(height: 80), // Space for FAB
+                    SizedBox(height: 20), // Reduced space
                   ],
                 ),
               ),
@@ -224,48 +226,144 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header untuk result
+                  // Header untuk result dengan tombol simpan yang prominent
                   Container(
                     width: double.infinity,
-                    padding: EdgeInsets.all(12),
+                    padding: EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.green[100],
-                      borderRadius: BorderRadius.circular(8),
+                      gradient: LinearGradient(
+                        colors: [Colors.green[100]!, Colors.green[50]!],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.green[300]!),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.check_circle, color: Colors.green[700]),
-                        SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Analisis Berhasil! (11/11 Fitur Lengkap)',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.green[700],
-                                ),
-                              ),
-                              Text(
-                                'Hasil untuk ${_calculatedResult!.patientName}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.green[600],
-                                ),
-                              ),
-                            ],
-                          ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.green.withOpacity(0.1),
+                          spreadRadius: 1,
+                          blurRadius: 4,
+                          offset: Offset(0, 2),
                         ),
-                        ElevatedButton.icon(
-                          onPressed: _saveData,
-                          icon: Icon(Icons.save, size: 16),
-                          label: Text('Simpan'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green[700],
-                            foregroundColor: Colors.white,
-                          ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.green[700],
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(Icons.check_circle, color: Colors.white, size: 24),
+                            ),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Analisis Berhasil! 🎉',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.green[800],
+                                    ),
+                                  ),
+                                  Text(
+                                    'Hasil untuk ${_calculatedResult!.patientName} (11/11 Fitur Lengkap)',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.green[700],
+                                    ),
+                                  ),
+                                  // TAMPILKAN INFO WHATSAPP JIKA ADA
+                                  if (_calculatedResult!.whatsappNumber != null && _calculatedResult!.whatsappNumber!.isNotEmpty) ...[
+                                    SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        Icon(Icons.chat, color: Colors.green[600], size: 16),
+                                        SizedBox(width: 4),
+                                        Text(
+                                          'WA: ${_calculatedResult!.whatsappNumber}',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.green[600],
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        
+                        SizedBox(height: 16),
+                        
+                        // Tombol aksi
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange[100],
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.orange[300]!),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.warning_amber, color: Colors.orange[700], size: 16),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      'Belum Disimpan',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.orange[700],
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            
+                            SizedBox(width: 12),
+                            
+                            ElevatedButton.icon(
+                              onPressed: _isLoading ? null : _saveData,
+                              icon: _isLoading 
+                                ? SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : Icon(Icons.save, size: 18),
+                              label: Text(
+                                _isLoading ? 'Menyimpan...' : 'Simpan Data',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green[700],
+                                foregroundColor: Colors.white,
+                                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                elevation: 4,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -318,6 +416,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                       SizedBox(height: 16),
                       PatientInfoCard(
                         patientNameController: _patientNameController,
+                        whatsappController: _whatsappController, // PARAMETER BARU
                         ageController: _ageController,
                         heightController: _heightController,
                         selectedGender: _selectedGender,
@@ -344,10 +443,10 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
             SizedBox(height: 16),
             _buildCalculateButton(),
             if (_calculatedResult != null) ...[
-              SizedBox(height: 16),
+              SizedBox(height: 20),
               _buildResultSection(),
             ],
-            SizedBox(height: 80), // Space for FAB
+            SizedBox(height: 20), // Reduced from 80
           ],
         ),
       ),
@@ -367,6 +466,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
             SizedBox(height: 16),
             PatientInfoCard(
               patientNameController: _patientNameController,
+              whatsappController: _whatsappController, // PARAMETER BARU
               ageController: _ageController,
               heightController: _heightController,
               selectedGender: _selectedGender,
@@ -385,10 +485,10 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
             SizedBox(height: 16),
             _buildCalculateButton(),
             if (_calculatedResult != null) ...[
-              SizedBox(height: 16),
+              SizedBox(height: 20),
               _buildResultSection(),
             ],
-            SizedBox(height: 80), // Space for FAB
+            SizedBox(height: 20), // Reduced from 80
           ],
         ),
       ),
@@ -403,90 +503,222 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Success notification
+        // Success notification dengan tombol simpan yang lebih prominent
         Container(
           width: double.infinity,
-          padding: EdgeInsets.all(12),
+          padding: EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.green[100],
-            borderRadius: BorderRadius.circular(8),
+            gradient: LinearGradient(
+              colors: [Colors.green[100]!, Colors.green[50]!],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: Colors.green[300]!),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.green.withOpacity(0.1),
+                spreadRadius: 1,
+                blurRadius: 4,
+                offset: Offset(0, 2),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Header dengan icon dan title
               Row(
                 children: [
-                  Icon(Icons.check_circle, color: Colors.green[700]),
-                  SizedBox(width: 8),
+                  Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.green[700],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(Icons.check_circle, color: Colors.white, size: 24),
+                  ),
+                  SizedBox(width: 12),
                   Expanded(
-                    child: Text(
-                      'Analisis Berhasil! (11/11 Fitur Lengkap)',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green[700],
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Analisis Berhasil! 🎉',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green[800],
+                          ),
+                        ),
+                        Text(
+                          'Semua 11 fitur Omron HBF-375 telah dihitung lengkap',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.green[700],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
-              SizedBox(height: 4),
-              Text(
-                'Hasil analisis untuk ${_calculatedResult!.patientName}',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.green[600],
+              
+              SizedBox(height: 12),
+              
+              // Patient info
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green[200]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.person, color: Colors.green[700], size: 20),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _calculatedResult!.patientName,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: Colors.green[800],
+                            ),
+                          ),
+                          Text(
+                            '${_calculatedResult!.age} tahun • ${_calculatedResult!.gender} • ${DateFormat('dd/MM/yyyy HH:mm').format(_calculatedResult!.timestamp)}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          // TAMPILKAN WHATSAPP INFO JIKA ADA
+                          if (_calculatedResult!.whatsappNumber != null && _calculatedResult!.whatsappNumber!.isNotEmpty) ...[
+                            SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Icon(Icons.chat, color: Colors.green[600], size: 14),
+                                SizedBox(width: 4),
+                                Text(
+                                  'WA: ${_calculatedResult!.whatsappNumber}',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.green[600],
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              SizedBox(height: 8),
-              // Action buttons row
+              
+              SizedBox(height: 16),
+              
+              // Action buttons - Lebih prominent
               Row(
                 children: [
+                  // Status indicator
                   Expanded(
+                    flex: 2,
                     child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
                         color: Colors.orange[100],
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: Colors.orange[300]!),
                       ),
-                      child: Text(
-                        '⚠️ Belum Disimpan',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: Colors.orange[700],
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textAlign: TextAlign.center,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.warning_amber, color: Colors.orange[700], size: 16),
+                          SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              'Belum Disimpan',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.orange[700],
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                  SizedBox(width: 8),
-                  ElevatedButton.icon(
-                    onPressed: _saveData,
-                    icon: Icon(Icons.save, size: 16),
-                    label: Text('Simpan', style: TextStyle(fontSize: 12)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green[700],
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      minimumSize: Size(0, 32),
+                  
+                  SizedBox(width: 12),
+                  
+                  // Simpan button - Lebih besar dan prominent
+                  Expanded(
+                    flex: 2,
+                    child: AnimatedContainer(
+                      duration: Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      child: ElevatedButton.icon(
+                        onPressed: _isLoading ? null : _saveData,
+                        icon: _isLoading 
+                          ? SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : Icon(Icons.save, size: 18),
+                        label: Text(
+                          _isLoading ? 'Menyimpan...' : 'Simpan Data',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green[700],
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          elevation: _isLoading ? 2 : 4,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                  SizedBox(width: 4),
+                  
+                  SizedBox(width: 8),
+                  
+                  // Fullscreen button
                   IconButton(
                     onPressed: () => _showResultDialog(),
-                    icon: Icon(Icons.fullscreen, color: Colors.green[700], size: 20),
-                    tooltip: 'Fullscreen',
-                    constraints: BoxConstraints(minWidth: 32, minHeight: 32),
+                    icon: Icon(Icons.fullscreen, color: Colors.green[700], size: 24),
+                    tooltip: 'Lihat Fullscreen',
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      side: BorderSide(color: Colors.green[300]!),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
                   ),
                 ],
               ),
             ],
           ),
         ),
+        
         SizedBox(height: 16),
-        // Result card dengan pembungkus yang aman
+        
+        // Result card
         Container(
           width: double.infinity,
           constraints: BoxConstraints(
@@ -945,7 +1177,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                           SizedBox(width: 8),
                           Expanded(
                             child: _buildNumberInputField(
-                                                            controller: _segSubRightArmController,
+                              controller: _segSubRightArmController,
                               label: 'Right Arm',
                               icon: Icons.back_hand,
                               hint: '0.0',
@@ -1302,30 +1534,6 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
     );
   }
 
-  Widget _buildFloatingActionButton() {
-    return FloatingActionButton.extended(
-      onPressed: _calculatedResult != null ? _saveData : null,
-      icon: _isLoading 
-        ? SizedBox(
-            width: 16,
-            height: 16,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-            ),
-          )
-        : Icon(Icons.save),
-      label: Text(_isLoading ? 'Menyimpan...' : 'Simpan Data'),
-      backgroundColor: _calculatedResult != null 
-        ? Colors.green[700] 
-        : Colors.grey[400],
-      foregroundColor: Colors.white,
-      tooltip: _calculatedResult != null 
-        ? 'Simpan hasil analisis ke database'
-        : 'Hitung analisis terlebih dahulu',
-    );
-  }
-
   Future<void> _calculateResult() async {
     if (!_formKey.currentState!.validate()) {
       _scrollToFirstError();
@@ -1366,6 +1574,9 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
       final omronData = OmronData(
         timestamp: DateTime.now(),
         patientName: _patientNameController.text.trim(),
+        whatsappNumber: _whatsappController.text.trim().isEmpty 
+          ? null 
+          : _whatsappController.text.trim(), // FIELD WHATSAPP BARU
         age: age,
         gender: _selectedGender,
         height: double.parse(_heightController.text),
@@ -1400,10 +1611,17 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
           }
         });
 
-        _showSuccessSnackBar(
-          'Analisis berhasil! Semua 11 fitur Omron HBF-375 telah dihitung. '
-          'Klik tombol "Simpan Data" untuk menyimpan ke database.'
-        );
+        // SUCCESS MESSAGE DENGAN INFO WHATSAPP
+        final hasWhatsApp = omronData.whatsappNumber != null && omronData.whatsappNumber!.isNotEmpty;
+        String successMessage = 'Analisis berhasil! Semua 11 fitur Omron HBF-375 telah dihitung. ';
+        
+        if (hasWhatsApp) {
+          successMessage += 'Nomor WhatsApp tersimpan: ${omronData.whatsappNumber}. ';
+        }
+        
+        successMessage += 'Klik tombol "Simpan Data" untuk menyimpan ke database.';
+        
+        _showSuccessSnackBar(successMessage);
       }
 
     } catch (e) {
@@ -1438,7 +1656,15 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
         _isLoading = false;
       });
 
-      _showSuccessSnackBar('Data berhasil disimpan dengan ID: $id');
+      // SUCCESS MESSAGE DENGAN INFO WHATSAPP
+      final hasWhatsApp = _calculatedResult!.whatsappNumber != null && _calculatedResult!.whatsappNumber!.isNotEmpty;
+      String successMessage = 'Data berhasil disimpan dengan ID: $id';
+      
+      if (hasWhatsApp) {
+        successMessage += ' (dengan nomor WhatsApp)';
+      }
+
+      _showSuccessSnackBar(successMessage);
       
       // Show save success dialog
       _showSaveSuccessDialog();
@@ -1506,6 +1732,20 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                         ),
                       ],
                     ),
+                    // TAMPILKAN INFO WHATSAPP JIKA ADA
+                    if (_calculatedResult!.whatsappNumber != null && _calculatedResult!.whatsappNumber!.isNotEmpty) ...[
+                      SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(Icons.chat, size: 16, color: Colors.green[600]),
+                          SizedBox(width: 4),
+                          Text(
+                            'WhatsApp: ${_calculatedResult!.whatsappNumber}',
+                            style: TextStyle(color: Colors.green[600], fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -1566,6 +1806,13 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                       '✅ Data tersimpan di database lokal',
                       style: TextStyle(color: Colors.green[700], fontSize: 12),
                     ),
+                    // TAMPILKAN INFO WHATSAPP JIKA ADA
+                    if (_calculatedResult!.whatsappNumber != null && _calculatedResult!.whatsappNumber!.isNotEmpty) ...[
+                      Text(
+                        '📱 Nomor WhatsApp: ${_calculatedResult!.whatsappNumber}',
+                        style: TextStyle(color: Colors.green[700], fontSize: 12),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -1645,13 +1892,35 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                           Icon(Icons.analytics, color: Colors.white, size: 24),
                           SizedBox(width: 12),
                           Expanded(
-                            child: Text(
-                              'Hasil Analisis - ${_calculatedResult!.patientName}',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Hasil Analisis - ${_calculatedResult!.patientName}',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                // TAMPILKAN WHATSAPP DI HEADER DIALOG JIKA ADA
+                                if (_calculatedResult!.whatsappNumber != null && _calculatedResult!.whatsappNumber!.isNotEmpty) ...[
+                                  SizedBox(height: 2),
+                                  Row(
+                                    children: [
+                                      Icon(Icons.chat, color: Colors.white70, size: 14),
+                                      SizedBox(width: 4),
+                                      Text(
+                                        'WA: ${_calculatedResult!.whatsappNumber}',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.white70,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ],
                             ),
                           ),
                           IconButton(
@@ -1691,6 +1960,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
   void _clearForm() {
     // Clear all controllers
     _patientNameController.clear();
+    _whatsappController.clear(); // CLEAR WHATSAPP CONTROLLER
     _ageController.clear();
     _heightController.clear();
     _weightController.clear();
@@ -1764,11 +2034,6 @@ Generated by LSHC Omron App
           borderRadius: BorderRadius.circular(8),
         ),
         duration: Duration(seconds: 4),
-        action: _calculatedResult != null ? SnackBarAction(
-          label: 'SIMPAN',
-          textColor: Colors.white,
-          onPressed: _saveData,
-        ) : null,
       ),
     );
   }
@@ -1797,6 +2062,7 @@ Generated by LSHC Omron App
   void dispose() {
     // Dispose all controllers
     _patientNameController.dispose();
+    _whatsappController.dispose(); // DISPOSE WHATSAPP CONTROLLER
     _ageController.dispose();
     _heightController.dispose();
     _weightController.dispose();
@@ -1824,4 +2090,3 @@ Generated by LSHC Omron App
     super.dispose();
   }
 }
-
