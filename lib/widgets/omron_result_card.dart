@@ -177,7 +177,7 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
             child: ElevatedButton.icon(
               onPressed: _shareToWhatsApp,
               icon: const Icon(Icons.chat, size: 16),
-              label: const Text('WA', style: TextStyle(fontSize: 11)),
+              label: const Text('Whatsapp', style: TextStyle(fontSize: 11)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green[600],
                 foregroundColor: Colors.white,
@@ -186,18 +186,18 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
             ),
           ),
           const SizedBox(width: 6),
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: _shareGeneral,
-              icon: const Icon(Icons.share, size: 16),
-              label: const Text('Share', style: TextStyle(fontSize: 11)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[600],
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 6),
-              ),
-            ),
-          ),
+          // Expanded(
+          //   child: ElevatedButton.icon(
+          //     onPressed: _shareGeneral,
+          //     icon: const Icon(Icons.share, size: 16),
+          //     label: const Text('Share', style: TextStyle(fontSize: 11)),
+          //     style: ElevatedButton.styleFrom(
+          //       backgroundColor: Colors.blue[600],
+          //       foregroundColor: Colors.white,
+          //       padding: const EdgeInsets.symmetric(vertical: 6),
+          //     ),
+          //   ),
+          // ),
         ],
       );
     } else {
