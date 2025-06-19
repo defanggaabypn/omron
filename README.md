@@ -266,7 +266,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **Dikembangkan dengan One Circle Software untuk kesehatan yang lebih baik**
 
 <!-- Row 1 -->
-<img src="ss/1.jpeg" width="150" alt="Tampilan Awal"> <img src="ss/2.jpeg" width="150" alt="Save Data"> <img src="ss/3.jpeg" width="150" alt="History">
+<img src="ss/1.jpeg" width="300" alt="Tampilan Awal"> <img src="ss/2.jpeg" width="300" alt="Save Data">
 
 <!-- Row 2 -->
-<img src="ss/4.jpeg" width="150" alt="Detail"> <img src="ss/5.jpeg" width="150" alt="Detail Advance"> <img src="ss/6.jpeg" width="150" alt="Statistik">
+<img src="ss/3.jpeg" width="300" alt="History"> <img src="ss/4.jpeg" width="300" alt="Detail">
+
+<!-- Row 3 -->
+<img src="ss/5.jpeg" width="300" alt="Detail Advance"> <img src="ss/6.jpeg" width="300" alt="Statistik">
