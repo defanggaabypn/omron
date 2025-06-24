@@ -6,13 +6,13 @@ import '../services/whatsapp_direct_service.dart';
 class WhatsAppFormDialog extends StatefulWidget {
   final OmronData data;
   final String? pdfPath;
-  final String? prefilledNumber; // PARAMETER BARU UNTUK NOMOR YANG SUDAH ADA
+  final String? prefilledNumber;
 
   const WhatsAppFormDialog({
     super.key,
     required this.data,
     this.pdfPath,
-    this.prefilledNumber, // PARAMETER BARU
+    this.prefilledNumber,
   });
 
   @override
@@ -55,15 +55,12 @@ class _WhatsAppFormDialogState extends State<WhatsAppFormDialog> {
   @override
   void initState() {
     super.initState();
-    // ISI NOMOR OTOMATIS JIKA ADA PREFILLED NUMBER
     if (widget.prefilledNumber != null && widget.prefilledNumber!.isNotEmpty) {
       _phoneController.text = _formatPhoneForDisplay(widget.prefilledNumber!);
     }
   }
 
-  // METHOD UNTUK FORMAT NOMOR TELEPON UNTUK DISPLAY
   String _formatPhoneForDisplay(String phoneNumber) {
-    // Remove country code if exists
     String cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d]'), '');
     if (cleanNumber.startsWith('62')) {
       cleanNumber = '0${cleanNumber.substring(2)}';
@@ -80,16 +77,18 @@ class _WhatsAppFormDialogState extends State<WhatsAppFormDialog> {
         borderRadius: BorderRadius.circular(16),
       ),
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 400),
-        padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header - UPDATED DENGAN INFO PREFILLED
-              Row(
+        constraints: BoxConstraints(
+          maxWidth: 400,
+          // TAMBAHKAN CONSTRAINT TINGGI MAKSIMUM
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // HEADER TETAP (TIDAK SCROLL)
+            Container(
+              padding: const EdgeInsets.all(20),
+              child: Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(8),
@@ -109,7 +108,7 @@ class _WhatsAppFormDialogState extends State<WhatsAppFormDialog> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          hasPrefilledNumber ? 'Kirim ke WhatsApp' : 'Kirim ke WhatsApp',
+                          'Kirim ke WhatsApp',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -135,226 +134,248 @@ class _WhatsAppFormDialogState extends State<WhatsAppFormDialog> {
                   ),
                 ],
               ),
-              
-              const SizedBox(height: 20),
-              
-              // INFO BANNER JIKA ADA PREFILLED NUMBER
-              if (hasPrefilledNumber) ...[
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.green[50],
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.green[200]!),
-                  ),
-                  child: Row(
+            ),
+            
+            // KONTEN YANG BISA SCROLL
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.info_outline, color: Colors.green[700], size: 20),
-                      const SizedBox(width: 8),
+                      // INFO BANNER JIKA ADA PREFILLED NUMBER
+                      if (hasPrefilledNumber) ...[
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.green[50],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.green[200]!),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.info_outline, color: Colors.green[700], size: 20),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Nomor WhatsApp sudah terisi otomatis dari data pasien. Anda dapat mengubahnya jika diperlukan.',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.green[700],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                      
+                      // Phone Number Input
+                      Text(
+                        'Nomor WhatsApp Tujuan',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      
+                      TextFormField(
+                        controller: _phoneController,
+                        decoration: InputDecoration(
+                          hintText: hasPrefilledNumber 
+                            ? 'Nomor sudah terisi otomatis'
+                            : 'Contoh: 08123456789 atau 628123456789',
+                          prefixIcon: Icon(
+                            Icons.phone, 
+                            color: hasPrefilledNumber ? Colors.green[700] : Colors.grey[600],
+                          ),
+                          prefixText: '+62 ',
+                          suffixIcon: hasPrefilledNumber
+                            ? Icon(Icons.check_circle, color: Colors.green[600], size: 20)
+                            : null,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: Colors.green[700]!, width: 2),
+                          ),
+                          fillColor: hasPrefilledNumber ? Colors.green[25] : null,
+                          filled: hasPrefilledNumber,
+                        ),
+                        keyboardType: TextInputType.phone,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(15),
+                        ],
+                        validator: (value) {
+                          if (value?.isEmpty ?? true) {
+                            return 'Nomor WhatsApp harus diisi';
+                          }
+                          if (value!.length < 10) {
+                            return 'Nomor WhatsApp minimal 10 digit';
+                          }
+                          return null;
+                        },
+                      ),
+                      
+                      const SizedBox(height: 20),
+                      
+                      // Caption Type Selection
+                      Text(
+                        'Pilih Jenis Caption',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      
+                      Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey[300]!),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Column(
+                          children: _captionTypes.entries.map((entry) {
+                            final String key = entry.key;
+                            final Map<String, dynamic> info = entry.value;
+                            
+                            return RadioListTile<String>(
+                              value: key,
+                              groupValue: _selectedCaptionType,
+                              onChanged: (value) {
+                                setState(() {
+                                  _selectedCaptionType = value!;
+                                });
+                              },
+                              activeColor: Colors.green[700],
+                              title: Row(
+                                children: [
+                                  Icon(
+                                    info['icon'] as IconData,
+                                    color: info['color'] as Color,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    info['title'] as String,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              subtitle: Text(
+                                info['subtitle'] as String,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              dense: true,
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 20),
+                      
+                      // Preview Caption Button
+                      OutlinedButton.icon(
+                        onPressed: _previewCaption,
+                        icon: const Icon(Icons.preview, size: 18),
+                        label: const Text('Preview Caption'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.blue[700],
+                          side: BorderSide(color: Colors.blue[700]!),
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 20),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            
+            // FOOTER TETAP (TIDAK SCROLL)
+            Container(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Action Buttons
+                  Row(
+                    children: [
                       Expanded(
-                        child: Text(
-                          'Nomor WhatsApp sudah terisi otomatis dari data pasien. Anda dapat mengubahnya jika diperlukan.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.green[700],
+                        child: OutlinedButton(
+                          onPressed: _isLoading ? null : _copyCaption,
+                          child: const Text('Copy Caption'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: _isLoading ? null : _sendToWhatsApp,
+                          icon: _isLoading 
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.send, size: 18),
+                                  if (hasPrefilledNumber) ...[
+                                    const SizedBox(width: 4),
+                                    Icon(Icons.flash_on, size: 14, color: Colors.yellow[200]),
+                                  ],
+                                ],
+                              ),
+                          label: Text(
+                            _isLoading 
+                              ? 'Mengirim...' 
+                              : hasPrefilledNumber 
+                                ? 'Kirim Cepat' 
+                                : 'Kirim'
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: hasPrefilledNumber ? Colors.green[600] : Colors.green[700],
+                            foregroundColor: Colors.white,
                           ),
                         ),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 16),
-              ],
-              
-              // Phone Number Input
-              Text(
-                'Nomor WhatsApp Tujuan',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[700],
-                ),
-              ),
-              const SizedBox(height: 8),
-              
-              TextFormField(
-                controller: _phoneController,
-                decoration: InputDecoration(
-                  hintText: hasPrefilledNumber 
-                    ? 'Nomor sudah terisi otomatis'
-                    : 'Contoh: 08123456789 atau 628123456789',
-                  prefixIcon: Icon(
-                    Icons.phone, 
-                    color: hasPrefilledNumber ? Colors.green[700] : Colors.grey[600],
-                  ),
-                  prefixText: '+62 ',
-                  suffixIcon: hasPrefilledNumber
-                    ? Icon(Icons.check_circle, color: Colors.green[600], size: 20)
-                    : null,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.green[700]!, width: 2),
-                  ),
-                  fillColor: hasPrefilledNumber ? Colors.green[25] : null,
-                  filled: hasPrefilledNumber,
-                ),
-                keyboardType: TextInputType.phone,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  LengthLimitingTextInputFormatter(15),
-                ],
-                validator: (value) {
-                  if (value?.isEmpty ?? true) {
-                    return 'Nomor WhatsApp harus diisi';
-                  }
-                  if (value!.length < 10) {
-                    return 'Nomor WhatsApp minimal 10 digit';
-                  }
-                  return null;
-                },
-              ),
-              
-              const SizedBox(height: 20),
-              
-              // Caption Type Selection
-              Text(
-                'Pilih Jenis Caption',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[700],
-                ),
-              ),
-              const SizedBox(height: 8),
-              
-              Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey[300]!),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  children: _captionTypes.entries.map((entry) {
-                    final String key = entry.key;
-                    final Map<String, dynamic> info = entry.value;
-                    
-                    return RadioListTile<String>(
-                      value: key,
-                      groupValue: _selectedCaptionType,
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedCaptionType = value!;
-                        });
-                      },
-                      activeColor: Colors.green[700],
-                      title: Row(
-                        children: [
-                          Icon(
-                            info['icon'] as IconData,
-                            color: info['color'] as Color,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            info['title'] as String,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                      subtitle: Text(
-                        info['subtitle'] as String,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                      dense: true,
-                    );
-                  }).toList(),
-                ),
-              ),
-              
-              const SizedBox(height: 20),
-              
-              // Preview Caption Button
-              OutlinedButton.icon(
-                onPressed: _previewCaption,
-                icon: const Icon(Icons.preview, size: 18),
-                label: const Text('Preview Caption'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.blue[700],
-                  side: BorderSide(color: Colors.blue[700]!),
-                ),
-              ),
-              
-              const SizedBox(height: 20),
-              
-              // Action Buttons - UPDATED DENGAN INDIKATOR PREFILLED
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: _isLoading ? null : _copyCaption,
-                      child: const Text('Copy Caption'),
+                  
+                  const SizedBox(height: 8),
+                  
+                  // Info text
+                  Text(
+                    hasPrefilledNumber
+                      ? 'Nomor sudah terisi dari data pasien. Caption akan dikirim ke WhatsApp, PDF dapat dibagikan secara terpisah'
+                      : 'Caption akan dikirim ke WhatsApp, PDF dapat dibagikan secara terpisah',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: hasPrefilledNumber ? Colors.green[600] : Colors.grey[500],
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: _isLoading ? null : _sendToWhatsApp,
-                      icon: _isLoading 
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.send, size: 18),
-                              if (hasPrefilledNumber) ...[
-                                const SizedBox(width: 4),
-                                Icon(Icons.flash_on, size: 14, color: Colors.yellow[200]),
-                              ],
-                            ],
-                          ),
-                      label: Text(
-                        _isLoading 
-                          ? 'Mengirim...' 
-                          : hasPrefilledNumber 
-                            ? 'Kirim Cepat' 
-                            : 'Kirim'
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: hasPrefilledNumber ? Colors.green[600] : Colors.green[700],
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
+                    textAlign: TextAlign.center,
                   ),
                 ],
               ),
-              
-              const SizedBox(height: 8),
-              
-              // Info text - UPDATED
-              Text(
-                hasPrefilledNumber
-                  ? 'Nomor sudah terisi dari data pasien. Caption akan dikirim ke WhatsApp, PDF dapat dibagikan secara terpisah'
-                  : 'Caption akan dikirim ke WhatsApp, PDF dapat dibagikan secara terpisah',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: hasPrefilledNumber ? Colors.green[600] : Colors.grey[500],
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
