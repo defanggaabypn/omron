@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-class PatientInfoCard extends StatelessWidget {
+class PatientInfoCard extends StatefulWidget {
   final TextEditingController patientNameController;
-  final TextEditingController whatsappController; // CONTROLLER BARU
+  final TextEditingController whatsappController;
   final TextEditingController ageController;
   final TextEditingController heightController;
   final String selectedGender;
@@ -12,12 +12,46 @@ class PatientInfoCard extends StatelessWidget {
   const PatientInfoCard({
     super.key,
     required this.patientNameController,
-    required this.whatsappController, // PARAMETER BARU
+    required this.whatsappController,
     required this.ageController,
     required this.heightController,
     required this.selectedGender,
     required this.onGenderChanged,
   });
+
+  @override
+  State<PatientInfoCard> createState() => _PatientInfoCardState();
+}
+
+class _PatientInfoCardState extends State<PatientInfoCard> {
+  @override
+  void initState() {
+    super.initState();
+    // Listener untuk format nama otomatis sudah dipindahkan ke parent
+    // Tambahkan listener untuk WhatsApp number formatting
+    widget.whatsappController.addListener(_formatWhatsAppNumber);
+  }
+
+  // Format nomor WhatsApp (opsional, untuk membersihkan format)
+  void _formatWhatsAppNumber() {
+    final text = widget.whatsappController.text;
+    final selection = widget.whatsappController.selection;
+    
+    // Remove any non-digit characters
+    final cleanedText = text.replaceAll(RegExp(r'[^\d]'), '');
+    
+    // Hanya update jika ada perubahan
+    if (cleanedText != text) {
+      widget.whatsappController.value = TextEditingValue(
+        text: cleanedText,
+        selection: TextSelection.collapsed(
+          offset: selection.baseOffset <= cleanedText.length 
+            ? selection.baseOffset 
+            : cleanedText.length,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,12 +91,13 @@ class PatientInfoCard extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             
-            // Patient Name Field
+            // Patient Name Field - DENGAN FORMAT OTOMATIS
             _buildTextFormField(
-              controller: patientNameController,
+              controller: widget.patientNameController,
               label: 'Nama Pasien',
               icon: Icons.person_outline,
               hint: 'Masukkan nama lengkap pasien',
+              textCapitalization: TextCapitalization.words, // Capitalize words
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
                   return 'Nama pasien harus diisi';
@@ -76,9 +111,9 @@ class PatientInfoCard extends StatelessWidget {
             
             const SizedBox(height: 12),
             
-            // WhatsApp Number Field - FIELD BARU
+            // WhatsApp Number Field
             _buildTextFormField(
-              controller: whatsappController,
+              controller: widget.whatsappController,
               label: 'Nomor WhatsApp (Opsional)',
               icon: Icons.chat,
               hint: 'Contoh: 08123456789 atau 628123456789',
@@ -95,13 +130,20 @@ class PatientInfoCard extends StatelessWidget {
                   if (value.length > 15) {
                     return 'Nomor WhatsApp maksimal 15 digit';
                   }
+                  // Validasi format nomor Indonesia
+                  if (!RegExp(r'^(08|628|62|8)').hasMatch(value)) {
+                    return 'Format nomor tidak valid (gunakan 08xxx atau 628xxx)';
+                  }
                 }
                 return null; // Field ini opsional
               },
-              suffixIcon: whatsappController.text.isNotEmpty
+              suffixIcon: widget.whatsappController.text.isNotEmpty
                   ? IconButton(
                       icon: Icon(Icons.clear, color: Colors.grey[600]),
-                      onPressed: () => whatsappController.clear(),
+                      onPressed: () {
+                        widget.whatsappController.clear();
+                        setState(() {}); // Refresh untuk update suffix icon
+                      },
                       tooltip: 'Hapus nomor',
                     )
                   : null,
@@ -114,7 +156,7 @@ class PatientInfoCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: _buildTextFormField(
-                    controller: ageController,
+                    controller: widget.ageController,
                     label: 'Usia (tahun)',
                     icon: Icons.cake,
                     hint: 'Contoh: 25',
@@ -138,7 +180,7 @@ class PatientInfoCard extends StatelessWidget {
                 const SizedBox(width: 16),
                 Expanded(
                   child: _buildTextFormField(
-                    controller: heightController,
+                    controller: widget.heightController,
                     label: 'Tinggi (cm)',
                     icon: Icons.height,
                     hint: 'Contoh: 170',
@@ -192,8 +234,8 @@ class PatientInfoCard extends StatelessWidget {
                         ],
                       ),
                       value: 'Male',
-                      groupValue: selectedGender,
-                      onChanged: onGenderChanged,
+                      groupValue: widget.selectedGender,
+                      onChanged: widget.onGenderChanged,
                       activeColor: Colors.blue[700],
                       dense: true,
                     ),
@@ -209,8 +251,8 @@ class PatientInfoCard extends StatelessWidget {
                         ],
                       ),
                       value: 'Female',
-                      groupValue: selectedGender,
-                      onChanged: onGenderChanged,
+                      groupValue: widget.selectedGender,
+                      onChanged: widget.onGenderChanged,
                       activeColor: Colors.pink[700],
                       dense: true,
                     ),
@@ -220,7 +262,7 @@ class PatientInfoCard extends StatelessWidget {
             ),
             
             // Info text untuk WhatsApp
-            if (whatsappController.text.isNotEmpty) ...[
+            if (widget.whatsappController.text.isNotEmpty) ...[
               const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.all(8),
@@ -246,6 +288,34 @@ class PatientInfoCard extends StatelessWidget {
                 ),
               ),
             ],
+            
+            // Format info untuk nama
+            if (widget.patientNameController.text.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: Colors.blue[200]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.auto_fix_high, color: Colors.blue[700], size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Nama otomatis diformat dengan huruf kapital di setiap kata',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.blue[700],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -261,11 +331,13 @@ class PatientInfoCard extends StatelessWidget {
     List<TextInputFormatter>? inputFormatters,
     String? Function(String?)? validator,
     Widget? suffixIcon,
+    TextCapitalization textCapitalization = TextCapitalization.none,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       inputFormatters: inputFormatters,
+      textCapitalization: textCapitalization,
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
@@ -281,6 +353,16 @@ class PatientInfoCard extends StatelessWidget {
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
       ),
       validator: validator,
+      onChanged: (value) {
+        // Trigger rebuild untuk update suffix icon dan info text
+        if (mounted) setState(() {});
+      },
     );
+  }
+
+  @override
+  void dispose() {
+    widget.whatsappController.removeListener(_formatWhatsAppNumber);
+    super.dispose();
   }
 }
