@@ -109,10 +109,10 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
   void _calculateBMI() {
     if (!_autoCalculateBMI) return;
     
-    final weight = double.tryParse(_weightController.text);
-    final height = double.tryParse(_heightController.text);
+    final weight = OmronData.parseDecimalInput(_weightController.text);
+    final height = OmronData.parseDecimalInput(_heightController.text);
     
-    if (weight != null && height != null && height > 0) {
+    if (weight > 0 && height > 0) {
       final heightInMeters = height / 100; // Convert cm to meters
       final bmi = weight / (heightInMeters * heightInMeters);
       _bmiController.text = bmi.toStringAsFixed(1);
@@ -122,10 +122,10 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
   void _calculateSegmentalData() {
     if (!_autoCalculateSegmental) return;
     
-    final subcutaneousFat = double.tryParse(_subcutaneousFatController.text);
-    final skeletalMuscle = double.tryParse(_skeletalMuscleController.text);
+    final subcutaneousFat = OmronData.parseDecimalInput(_subcutaneousFatController.text);
+    final skeletalMuscle = OmronData.parseDecimalInput(_skeletalMuscleController.text);
     
-    if (subcutaneousFat != null) {
+    if (subcutaneousFat > 0) {
       final segmental = OmronData.calculateSegmentalSubcutaneousFat(subcutaneousFat);
       _segSubTrunkController.text = segmental['trunk']!.toStringAsFixed(1);
       _segSubRightArmController.text = segmental['rightArm']!.toStringAsFixed(1);
@@ -134,7 +134,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
       _segSubLeftLegController.text = segmental['leftLeg']!.toStringAsFixed(1);
     }
     
-    if (skeletalMuscle != null) {
+    if (skeletalMuscle > 0) {
       final segmental = OmronData.calculateSegmentalSkeletalMuscle(skeletalMuscle);
       _segMusTrunkController.text = segmental['trunk']!.toStringAsFixed(1);
       _segMusRightArmController.text = segmental['rightArm']!.toStringAsFixed(1);
@@ -899,7 +899,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                 controller: _weightController,
                 label: 'Berat Badan (kg)',
                 icon: Icons.scale,
-                hint: 'Contoh: 75.5',
+                hint: 'Contoh: 75,5 atau 75.5',
                 suffix: 'kg',
               ),
             ),
@@ -909,7 +909,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                 controller: _bodyFatController,
                 label: 'Body Fat (%)',
                 icon: Icons.pie_chart_outline,
-                hint: 'Contoh: 18.5',
+                hint: 'Contoh: 18,5 atau 18.5',
                 suffix: '%',
               ),
             ),
@@ -924,7 +924,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                 controller: _bmiController,
                 label: 'BMI',
                 icon: Icons.straighten,
-                hint: 'Contoh: 23.4',
+                hint: 'Contoh: 23,4 atau 23.4',
                 enabled: !_autoCalculateBMI,
               ),
             ),
@@ -956,8 +956,8 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                 controller: _visceralFatController,
                 label: 'Visceral Fat',
                 icon: Icons.favorite_outline,
-                hint: 'Contoh: 8',
-                isInteger: true,
+                hint: 'Contoh: 8,5 atau 8.5', // UPDATED HINT UNTUK KOMA
+                isInteger: false, // UBAH KE FALSE UNTUK SUPPORT DECIMAL
               ),
             ),
             const SizedBox(width: 16),
@@ -1000,7 +1000,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
           controller: _weightController,
           label: 'Berat Badan (kg)',
           icon: Icons.scale,
-          hint: 'Contoh: 75.5',
+          hint: 'Contoh: 75,5 atau 75.5',
           suffix: 'kg',
         ),
         
@@ -1008,7 +1008,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
           controller: _bodyFatController,
           label: 'Body Fat Percentage (%)',
           icon: Icons.pie_chart_outline,
-          hint: 'Contoh: 18.5',
+          hint: 'Contoh: 18,5 atau 18.5',
           suffix: '%',
         ),
         
@@ -1020,7 +1020,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                 controller: _bmiController,
                 label: 'Body Mass Index (BMI)',
                 icon: Icons.straighten,
-                hint: 'Contoh: 23.4',
+                hint: 'Contoh: 23,4 atau 23.4',
                 enabled: !_autoCalculateBMI,
               ),
             ),
@@ -1047,8 +1047,8 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
           controller: _visceralFatController,
           label: 'Visceral Fat Level',
           icon: Icons.favorite_outline,
-          hint: 'Contoh: 8',
-          isInteger: true,
+          hint: 'Contoh: 8,5 atau 8.5', // UPDATED HINT UNTUK KOMA
+          isInteger: false, // UBAH KE FALSE UNTUK SUPPORT DECIMAL
         ),
         
         _buildNumberInputField(
@@ -1103,7 +1103,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
               controller: _subcutaneousFatController,
               label: 'Subcutaneous Fat (%)',
               icon: Icons.layers,
-              hint: 'Contoh: 15.2',
+              hint: 'Contoh: 15,2 atau 15.2',
               suffix: '%',
             ),
             
@@ -1112,7 +1112,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
               controller: _skeletalMuscleController,
               label: 'Skeletal Muscle (%)',
               icon: Icons.fitness_center,
-              hint: 'Contoh: 42.1',
+              hint: 'Contoh: 42,1 atau 42.1',
               suffix: '%',
             ),
             
@@ -1196,7 +1196,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                               controller: _segSubTrunkController,
                               label: 'Trunk',
                               icon: Icons.airline_seat_recline_normal,
-                              hint: '0.0',
+                              hint: '0,0',
                               suffix: '%',
                               enabled: !_autoCalculateSegmental,
                             ),
@@ -1207,7 +1207,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                               controller: _segSubRightArmController,
                               label: 'Right Arm',
                               icon: Icons.back_hand,
-                              hint: '0.0',
+                              hint: '0,0',
                               suffix: '%',
                               enabled: !_autoCalculateSegmental,
                             ),
@@ -1218,7 +1218,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                               controller: _segSubLeftArmController,
                               label: 'Left Arm',
                               icon: Icons.front_hand,
-                              hint: '0.0',
+                              hint: '0,0',
                               suffix: '%',
                               enabled: !_autoCalculateSegmental,
                             ),
@@ -1232,7 +1232,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                               controller: _segSubRightLegController,
                               label: 'Right Leg',
                               icon: Icons.directions_walk,
-                              hint: '0.0',
+                              hint: '0,0',
                               suffix: '%',
                               enabled: !_autoCalculateSegmental,
                             ),
@@ -1243,7 +1243,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                               controller: _segSubLeftLegController,
                               label: 'Left Leg',
                               icon: Icons.directions_run,
-                              hint: '0.0',
+                              hint: '0,0',
                               suffix: '%',
                               enabled: !_autoCalculateSegmental,
                             ),
@@ -1260,7 +1260,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                         controller: _segSubTrunkController,
                         label: 'Trunk',
                         icon: Icons.airline_seat_recline_normal,
-                        hint: '0.0',
+                        hint: '0,0',
                         suffix: '%',
                         enabled: !_autoCalculateSegmental,
                       ),
@@ -1271,7 +1271,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                               controller: _segSubRightArmController,
                               label: 'Right Arm',
                               icon: Icons.back_hand,
-                              hint: '0.0',
+                              hint: '0,0',
                               suffix: '%',
                               enabled: !_autoCalculateSegmental,
                             ),
@@ -1282,7 +1282,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                               controller: _segSubLeftArmController,
                               label: 'Left Arm',
                               icon: Icons.front_hand,
-                              hint: '0.0',
+                              hint: '0,0',
                               suffix: '%',
                               enabled: !_autoCalculateSegmental,
                             ),
@@ -1296,7 +1296,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                               controller: _segSubRightLegController,
                               label: 'Right Leg',
                               icon: Icons.directions_walk,
-                              hint: '0.0',
+                              hint: '0,0',
                               suffix: '%',
                               enabled: !_autoCalculateSegmental,
                             ),
@@ -1307,7 +1307,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                               controller: _segSubLeftLegController,
                               label: 'Left Leg',
                               icon: Icons.directions_run,
-                              hint: '0.0',
+                              hint: '0,0',
                               suffix: '%',
                               enabled: !_autoCalculateSegmental,
                             ),
@@ -1345,7 +1345,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                               controller: _segMusTrunkController,
                               label: 'Trunk',
                               icon: Icons.airline_seat_recline_normal,
-                              hint: '0.0',
+                              hint: '0,0',
                               suffix: '%',
                               enabled: !_autoCalculateSegmental,
                             ),
@@ -1356,7 +1356,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                               controller: _segMusRightArmController,
                               label: 'Right Arm',
                               icon: Icons.back_hand,
-                              hint: '0.0',
+                              hint: '0,0',
                               suffix: '%',
                               enabled: !_autoCalculateSegmental,
                             ),
@@ -1367,7 +1367,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                               controller: _segMusLeftArmController,
                               label: 'Left Arm',
                               icon: Icons.front_hand,
-                              hint: '0.0',
+                              hint: '0,0',
                               suffix: '%',
                               enabled: !_autoCalculateSegmental,
                             ),
@@ -1381,7 +1381,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                               controller: _segMusRightLegController,
                               label: 'Right Leg',
                               icon: Icons.directions_walk,
-                              hint: '0.0',
+                              hint: '0,0',
                               suffix: '%',
                               enabled: !_autoCalculateSegmental,
                             ),
@@ -1392,7 +1392,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                               controller: _segMusLeftLegController,
                               label: 'Left Leg',
                               icon: Icons.directions_run,
-                              hint: '0.0',
+                              hint: '0,0',
                               suffix: '%',
                               enabled: !_autoCalculateSegmental,
                             ),
@@ -1409,7 +1409,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                         controller: _segMusTrunkController,
                         label: 'Trunk',
                         icon: Icons.airline_seat_recline_normal,
-                        hint: '0.0',
+                        hint: '0,0',
                         suffix: '%',
                         enabled: !_autoCalculateSegmental,
                       ),
@@ -1420,7 +1420,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                               controller: _segMusRightArmController,
                               label: 'Right Arm',
                               icon: Icons.back_hand,
-                              hint: '0.0',
+                              hint: '0,0',
                               suffix: '%',
                               enabled: !_autoCalculateSegmental,
                             ),
@@ -1431,7 +1431,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                               controller: _segMusLeftArmController,
                               label: 'Left Arm',
                               icon: Icons.front_hand,
-                              hint: '0.0',
+                              hint: '0,0',
                               suffix: '%',
                               enabled: !_autoCalculateSegmental,
                             ),
@@ -1445,7 +1445,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                               controller: _segMusRightLegController,
                               label: 'Right Leg',
                               icon: Icons.directions_walk,
-                              hint: '0.0',
+                              hint: '0,0',
                               suffix: '%',
                               enabled: !_autoCalculateSegmental,
                             ),
@@ -1456,7 +1456,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                               controller: _segMusLeftLegController,
                               label: 'Left Leg',
                               icon: Icons.directions_run,
-                              hint: '0.0',
+                              hint: '0,0',
                               suffix: '%',
                               enabled: !_autoCalculateSegmental,
                             ),
@@ -1493,7 +1493,8 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
           if (isInteger)
             FilteringTextInputFormatter.digitsOnly
           else
-            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+            // UPDATED: SUPPORT KOMA DAN TITIK UNTUK DECIMAL
+            FilteringTextInputFormatter.allow(RegExp(r'^\d*[.,]?\d*')),
         ],
         decoration: InputDecoration(
           labelText: label,
@@ -1519,8 +1520,10 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
               return 'Masukkan angka yang valid';
             }
           } else {
-            if (double.tryParse(value) == null) {
-              return 'Masukkan angka yang valid';
+            // UPDATED: VALIDATION SUPPORT KOMA
+            final normalizedValue = value.replaceAll(',', '.');
+            if (double.tryParse(normalizedValue) == null) {
+              return 'Masukkan angka yang valid (gunakan koma atau titik untuk desimal)';
             }
           }
           return null;
@@ -1576,25 +1579,25 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
       // Simulate processing time
       await Future.delayed(const Duration(milliseconds: 1000));
 
-      // Get segmental data
+      // Get segmental data with decimal parsing
       Map<String, double> segmentalSubcutaneous = {
-        'trunk': double.tryParse(_segSubTrunkController.text) ?? 0.0,
-        'rightArm': double.tryParse(_segSubRightArmController.text) ?? 0.0,
-        'leftArm': double.tryParse(_segSubLeftArmController.text) ?? 0.0,
-        'rightLeg': double.tryParse(_segSubRightLegController.text) ?? 0.0,
-        'leftLeg': double.tryParse(_segSubLeftLegController.text) ?? 0.0,
+        'trunk': OmronData.parseDecimalInput(_segSubTrunkController.text),
+        'rightArm': OmronData.parseDecimalInput(_segSubRightArmController.text),
+        'leftArm': OmronData.parseDecimalInput(_segSubLeftArmController.text),
+        'rightLeg': OmronData.parseDecimalInput(_segSubRightLegController.text),
+        'leftLeg': OmronData.parseDecimalInput(_segSubLeftLegController.text),
       };
 
       Map<String, double> segmentalSkeletal = {
-        'trunk': double.tryParse(_segMusTrunkController.text) ?? 0.0,
-        'rightArm': double.tryParse(_segMusRightArmController.text) ?? 0.0,
-        'leftArm': double.tryParse(_segMusLeftArmController.text) ?? 0.0,
-        'rightLeg': double.tryParse(_segMusRightLegController.text) ?? 0.0,
-        'leftLeg': double.tryParse(_segMusLeftLegController.text) ?? 0.0,
+        'trunk': OmronData.parseDecimalInput(_segMusTrunkController.text),
+        'rightArm': OmronData.parseDecimalInput(_segMusRightArmController.text),
+        'leftArm': OmronData.parseDecimalInput(_segMusLeftArmController.text),
+        'rightLeg': OmronData.parseDecimalInput(_segMusRightLegController.text),
+        'leftLeg': OmronData.parseDecimalInput(_segMusLeftLegController.text),
       };
 
       // Calculate same age comparison
-      final bodyFat = double.parse(_bodyFatController.text);
+      final bodyFat = OmronData.parseDecimalInput(_bodyFatController.text);
       final age = int.parse(_ageController.text);
       final sameAgeComparison = OmronData.calculateSameAgeComparison(bodyFat, age, _selectedGender);
 
@@ -1606,15 +1609,15 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
           : _whatsappController.text.trim(),
         age: age,
         gender: _selectedGender,
-        height: double.parse(_heightController.text),
-        weight: double.parse(_weightController.text),
+        height: OmronData.parseDecimalInput(_heightController.text),
+        weight: OmronData.parseDecimalInput(_weightController.text),
         bodyFatPercentage: bodyFat,
-        bmi: double.parse(_bmiController.text),
-        skeletalMusclePercentage: double.parse(_skeletalMuscleController.text),
-        visceralFatLevel: int.parse(_visceralFatController.text),
+        bmi: OmronData.parseDecimalInput(_bmiController.text),
+        skeletalMusclePercentage: OmronData.parseDecimalInput(_skeletalMuscleController.text),
+        visceralFatLevel: OmronData.parseDecimalInput(_visceralFatController.text), // SEKARANG SUPPORT DECIMAL
         restingMetabolism: int.parse(_restingMetabolismController.text),
         bodyAge: int.parse(_bodyAgeController.text),
-        subcutaneousFatPercentage: double.parse(_subcutaneousFatController.text),
+        subcutaneousFatPercentage: OmronData.parseDecimalInput(_subcutaneousFatController.text),
         segmentalSubcutaneousFat: segmentalSubcutaneous,
         segmentalSkeletalMuscle: segmentalSkeletal,
         sameAgeComparison: sameAgeComparison,

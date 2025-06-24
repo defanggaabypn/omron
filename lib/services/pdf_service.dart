@@ -164,7 +164,7 @@ class PDFService {
                 _buildMeasurementRow('BMI', data.bmi.toStringAsFixed(1), data.bmiCategory, _getBMIDescription(data.bmiCategory)),
                 _buildMeasurementRow('Body Fat', '${data.bodyFatPercentage.toStringAsFixed(1)}%', data.bodyFatCategory, _getBodyFatDescription(data.bodyFatCategory)),
                 _buildMeasurementRow('Skeletal Muscle', '${data.skeletalMusclePercentage.toStringAsFixed(1)}%', _getSkeletalMuscleCategory(data.skeletalMusclePercentage), ''),
-                _buildMeasurementRow('Visceral Fat', data.visceralFatLevel.toString(), _getVisceralFatCategory(data.visceralFatLevel), _getVisceralFatDescription(data.visceralFatLevel)),
+                _buildMeasurementRow('Visceral Fat', data.visceralFatLevel.toString(), _getVisceralFatCategory(data.visceralFatLevel.toInt()), _getVisceralFatDescription(data.visceralFatLevel.toInt())),
                 _buildMeasurementRow('Resting Metabolism', '${data.restingMetabolism} kcal', 'Normal', ''),
                 _buildMeasurementRow('Body Age', '${data.bodyAge} tahun', _getBodyAgeStatus(data.bodyAge, data.age), ''),
               ],
@@ -734,7 +734,7 @@ class PDFService {
   static String _generateBasicSummary(OmronData data) {
     return 'Berdasarkan 7 indikator dasar Omron HBF-375, kondisi keseluruhan Anda dinilai ${data.overallAssessment}. '
            'BMI Anda ${data.bmi.toStringAsFixed(1)} termasuk kategori ${data.bmiCategory}, dengan persentase lemak tubuh ${data.bodyFatPercentage.toStringAsFixed(1)}% (${data.bodyFatCategory}). '
-           'Level lemak viseral Anda ${data.visceralFatLevel} (${_getVisceralFatCategory(data.visceralFatLevel)}).';
+           'Level lemak viseral Anda ${data.visceralFatLevel.toStringAsFixed(0)} (${_getVisceralFatCategory(data.visceralFatLevel.toInt())}).';
   }
 
   static String _generateAdvancedSummary(OmronData data) {

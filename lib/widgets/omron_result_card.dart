@@ -157,7 +157,7 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
     final bool hasWhatsApp = widget.data.whatsappNumber != null && widget.data.whatsappNumber!.isNotEmpty;
     
     if (hasWhatsApp) {
-      // Jika ada nomor WhatsApp: tampilkan 3 tombol
+      // Jika ada nomor WhatsApp: tampilkan 2 tombol
       return Row(
         children: [
           Expanded(
@@ -177,7 +177,7 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
             child: ElevatedButton.icon(
               onPressed: _shareToWhatsApp,
               icon: const Icon(Icons.chat, size: 16),
-              label: const Text('Whatsapp', style: TextStyle(fontSize: 11)),
+              label: const Text('WhatsApp', style: TextStyle(fontSize: 11)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green[600],
                 foregroundColor: Colors.white,
@@ -185,23 +185,10 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
               ),
             ),
           ),
-          const SizedBox(width: 6),
-          // Expanded(
-          //   child: ElevatedButton.icon(
-          //     onPressed: _shareGeneral,
-          //     icon: const Icon(Icons.share, size: 16),
-          //     label: const Text('Share', style: TextStyle(fontSize: 11)),
-          //     style: ElevatedButton.styleFrom(
-          //       backgroundColor: Colors.blue[600],
-          //       foregroundColor: Colors.white,
-          //       padding: const EdgeInsets.symmetric(vertical: 6),
-          //     ),
-          //   ),
-          // ),
         ],
       );
     } else {
-      // Jika tidak ada nomor WhatsApp: tampilkan 2 tombol biasa
+      // Jika tidak ada nomor WhatsApp: tampilkan 1 tombol PDF saja
       return Row(
         children: [
           Expanded(
@@ -216,19 +203,6 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
               ),
             ),
           ),
-          const SizedBox(width: 8),
-          // Expanded(
-          //   child: ElevatedButton.icon(
-          //     onPressed: _shareGeneral,
-          //     icon: const Icon(Icons.share, size: 18),
-          //     label: const Text('Share', style: TextStyle(fontSize: 12)),
-          //     style: ElevatedButton.styleFrom(
-          //       backgroundColor: Colors.green[600],
-          //       foregroundColor: Colors.white,
-          //       padding: const EdgeInsets.symmetric(vertical: 8),
-          //     ),
-          //   ),
-          // ),
         ],
       );
     }
@@ -468,7 +442,7 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
                 Expanded(
                   child: _buildMeasurementTile(
                     'Visceral Fat',
-                    widget.data.visceralFatLevel.toString(),
+                    widget.data.visceralFatLevel.toStringAsFixed(1), // UPDATED: DECIMAL DISPLAY
                     Icons.favorite,
                     Colors.pink,
                   ),
@@ -983,9 +957,9 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
         ),
         _buildAnalysisItem(
           'Visceral Fat',
-          _getVisceralFatCategory(widget.data.visceralFatLevel),
-          _getVisceralFatColor(widget.data.visceralFatLevel),
-          _getVisceralFatDescription(widget.data.visceralFatLevel),
+          _getVisceralFatCategory(widget.data.visceralFatLevel), // UPDATED: DOUBLE PARAMETER
+          _getVisceralFatColor(widget.data.visceralFatLevel), // UPDATED: DOUBLE PARAMETER
+          _getVisceralFatDescription(widget.data.visceralFatLevel), // UPDATED: DOUBLE PARAMETER
         ),
       ],
     );
@@ -1265,8 +1239,8 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
       ));
     }
     
-    // Visceral fat recommendations
-    if (widget.data.visceralFatLevel > 9) {
+    // Visceral fat recommendations - UPDATED: DOUBLE COMPARISON
+    if (widget.data.visceralFatLevel > 9.0) {
       recommendations.add(_buildRecommendationItem(
         '❤️ Kurangi lemak visceral dengan diet seimbang',
         Colors.pink,
@@ -1391,21 +1365,22 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
     }
   }
 
-  String _getVisceralFatCategory(int level) {
-    if (level <= 9) return 'Normal';
-    if (level <= 14) return 'High';
+  // UPDATED: VISCERAL FAT METHODS FOR DOUBLE
+  String _getVisceralFatCategory(double level) {
+    if (level <= 9.0) return 'Normal';
+    if (level <= 14.0) return 'High';
     return 'Very High';
   }
 
-  Color _getVisceralFatColor(int level) {
-    if (level <= 9) return Colors.green;
-    if (level <= 14) return Colors.orange;
+  Color _getVisceralFatColor(double level) {
+    if (level <= 9.0) return Colors.green;
+    if (level <= 14.0) return Colors.orange;
     return Colors.red;
   }
 
-  String _getVisceralFatDescription(int level) {
-    if (level <= 9) return 'Level lemak visceral dalam batas normal';
-    if (level <= 14) return 'Level lemak visceral agak tinggi';
+  String _getVisceralFatDescription(double level) {
+    if (level <= 9.0) return 'Level lemak visceral dalam batas normal';
+    if (level <= 14.0) return 'Level lemak visceral agak tinggi';
     return 'Level lemak visceral sangat tinggi';
   }
 
@@ -1538,45 +1513,6 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
       if (mounted) _showErrorDialog('Gagal membuat PDF', e.toString());
     }
   }
-
-  // METHOD UNTUK SHARE UMUM (TANPA WHATSAPP KHUSUS)
-  // Future<void> _shareGeneral() async {
-  //   try {
-  //     // Show loading dialog
-  //     if (!mounted) return;
-  //     showDialog(
-  //       context: context,
-  //       barrierDismissible: false,
-  //       builder: (context) => const Center(
-  //         child: CircularProgressIndicator(),
-  //       ),
-  //     );
-
-  //     // Generate PDF first
-  //     final String pdfPath = await PDFService.generateOmronReport(widget.data);
-      
-  //     // Close loading dialog dengan mounted check
-  //     if (!mounted) return;
-  //     Navigator.of(context).pop();
-      
-  //     // Show WhatsApp form dialog tanpa nomor terisi
-  //     if (!mounted) return;
-  //     showDialog(
-  //       context: context,
-  //       builder: (context) => WhatsAppFormDialog(
-  //         data: widget.data,
-  //         pdfPath: pdfPath,
-  //       ),
-  //     );
-      
-  //   } catch (e) {
-  //     // Close loading dialog dengan mounted check
-  //     if (mounted) Navigator.of(context).pop();
-      
-  //     // Show error dialog dengan mounted check
-  //     if (mounted) _showErrorDialog('Gagal membuat PDF', e.toString());
-  //   }
-  // }
 
   // PDF Export method - SAMA SEPERTI ASLI
   Future<void> _exportToPDF() async {

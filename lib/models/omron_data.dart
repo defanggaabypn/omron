@@ -12,7 +12,7 @@ class OmronData {
   final double bodyFatPercentage;
   final double bmi;
   final double skeletalMusclePercentage;
-  final int visceralFatLevel;
+  final double visceralFatLevel; // UBAH DARI INT KE DOUBLE UNTUK SUPPORT KOMA
   final int restingMetabolism;
   final int bodyAge;
   
@@ -40,7 +40,7 @@ class OmronData {
     required this.bodyFatPercentage,
     required this.bmi,
     required this.skeletalMusclePercentage,
-    required this.visceralFatLevel,
+    required this.visceralFatLevel, // SEKARANG DOUBLE
     required this.restingMetabolism,
     required this.bodyAge,
     required this.subcutaneousFatPercentage,
@@ -86,8 +86,8 @@ class OmronData {
     return 'Poor';
   }
 
-  // Overall Health Assessment
-  static String _getOverallAssessment(double bmi, double bodyFat, int visceralFat) {
+  // Overall Health Assessment - PARAMETER VISCERAL FAT SEKARANG DOUBLE
+  static String _getOverallAssessment(double bmi, double bodyFat, double visceralFat) {
     int score = 0;
     
     // BMI Score
@@ -98,9 +98,9 @@ class OmronData {
     if (bodyFat >= 10 && bodyFat <= 25) score += 2;
     else if (bodyFat > 25 && bodyFat <= 32) score += 1;
     
-    // Visceral Fat Score
-    if (visceralFat <= 9) score += 2;
-    else if (visceralFat <= 14) score += 1;
+    // Visceral Fat Score - SEKARANG MENGGUNAKAN DOUBLE
+    if (visceralFat <= 9.0) score += 2;
+    else if (visceralFat <= 14.0) score += 1;
     
     if (score >= 5) return 'Excellent';
     if (score >= 3) return 'Good';
@@ -143,6 +143,17 @@ class OmronData {
     }
   }
 
+  // HELPER METHOD UNTUK PARSING INPUT DENGAN KOMA
+  static double parseDecimalInput(String input) {
+    if (input.isEmpty) return 0.0;
+    
+    // Replace koma dengan titik untuk parsing
+    String normalizedInput = input.replaceAll(',', '.');
+    
+    // Parse ke double
+    return double.tryParse(normalizedInput) ?? 0.0;
+  }
+
   // Convert to Map for database
   Map<String, dynamic> toMap() {
     return {
@@ -157,7 +168,7 @@ class OmronData {
       'bodyFatPercentage': bodyFatPercentage,
       'bmi': bmi,
       'skeletalMusclePercentage': skeletalMusclePercentage,
-      'visceralFatLevel': visceralFatLevel,
+      'visceralFatLevel': visceralFatLevel, // SEKARANG DOUBLE
       'restingMetabolism': restingMetabolism,
       'bodyAge': bodyAge,
       'subcutaneousFatPercentage': subcutaneousFatPercentage,
@@ -176,18 +187,18 @@ class OmronData {
       whatsappNumber: map['whatsappNumber'], // AMBIL DARI MAP
       age: map['age'],
       gender: map['gender'],
-      height: map['height'],
-      weight: map['weight'],
-      bodyFatPercentage: map['bodyFatPercentage'],
-      bmi: map['bmi'],
-      skeletalMusclePercentage: map['skeletalMusclePercentage'],
-      visceralFatLevel: map['visceralFatLevel'],
+      height: (map['height'] as num).toDouble(),
+      weight: (map['weight'] as num).toDouble(),
+      bodyFatPercentage: (map['bodyFatPercentage'] as num).toDouble(),
+      bmi: (map['bmi'] as num).toDouble(),
+      skeletalMusclePercentage: (map['skeletalMusclePercentage'] as num).toDouble(),
+      visceralFatLevel: (map['visceralFatLevel'] as num).toDouble(), // PARSE SEBAGAI DOUBLE
       restingMetabolism: map['restingMetabolism'],
       bodyAge: map['bodyAge'],
-      subcutaneousFatPercentage: map['subcutaneousFatPercentage'] ?? 0.0,
+      subcutaneousFatPercentage: ((map['subcutaneousFatPercentage'] ?? 0.0) as num).toDouble(),
       segmentalSubcutaneousFat: _parseSegmentalData(map['segmentalSubcutaneousFat'] ?? '{"trunk": 0.0, "rightArm": 0.0, "leftArm": 0.0, "rightLeg": 0.0, "leftLeg": 0.0}'),
       segmentalSkeletalMuscle: _parseSegmentalData(map['segmentalSkeletalMuscle'] ?? '{"trunk": 0.0, "rightArm": 0.0, "leftArm": 0.0, "rightLeg": 0.0, "leftLeg": 0.0}'),
-      sameAgeComparison: map['sameAgeComparison'] ?? 50.0,
+      sameAgeComparison: ((map['sameAgeComparison'] ?? 50.0) as num).toDouble(),
     );
   }
 
@@ -204,7 +215,7 @@ class OmronData {
     double? bodyFatPercentage,
     double? bmi,
     double? skeletalMusclePercentage,
-    int? visceralFatLevel,
+    double? visceralFatLevel, // SEKARANG DOUBLE
     int? restingMetabolism,
     int? bodyAge,
     double? subcutaneousFatPercentage,
@@ -224,7 +235,7 @@ class OmronData {
       bodyFatPercentage: bodyFatPercentage ?? this.bodyFatPercentage,
       bmi: bmi ?? this.bmi,
       skeletalMusclePercentage: skeletalMusclePercentage ?? this.skeletalMusclePercentage,
-      visceralFatLevel: visceralFatLevel ?? this.visceralFatLevel,
+      visceralFatLevel: visceralFatLevel ?? this.visceralFatLevel, // SEKARANG DOUBLE
       restingMetabolism: restingMetabolism ?? this.restingMetabolism,
       bodyAge: bodyAge ?? this.bodyAge,
       subcutaneousFatPercentage: subcutaneousFatPercentage ?? this.subcutaneousFatPercentage,

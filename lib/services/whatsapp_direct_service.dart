@@ -248,7 +248,7 @@ class WhatsAppDirectService {
 • BMI: ${data.bmi.toStringAsFixed(1)} (${data.bmiCategory})
 • Body Fat: ${data.bodyFatPercentage.toStringAsFixed(1)}% (${data.bodyFatCategory})
 • Muscle: ${data.skeletalMusclePercentage.toStringAsFixed(1)}%
-• Visceral Fat: ${data.visceralFatLevel} (${_getVisceralFatStatus(data.visceralFatLevel)})
+• Visceral Fat: ${data.visceralFatLevel} (${_getVisceralFatStatus(data.visceralFatLevel.toInt())})
 • Body Age: ${data.bodyAge} tahun
 
 🎯 *PENILAIAN KESELURUHAN:*

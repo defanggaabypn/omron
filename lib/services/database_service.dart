@@ -22,7 +22,7 @@ class DatabaseService {
     String path = join(await getDatabasesPath(), 'omron_hbf375.db');
     return await openDatabase(
       path,
-      version: 3, // NAIK VERSION UNTUK UPDATE SCHEMA DENGAN WHATSAPP
+      version: 4, // NAIK VERSION UNTUK UPDATE SCHEMA VISCERAL FAT KE REAL
       onCreate: _createDatabase,
       onUpgrade: _upgradeDatabase,
     );
@@ -42,7 +42,7 @@ class DatabaseService {
         bodyFatPercentage REAL NOT NULL,
         bmi REAL NOT NULL,
         skeletalMusclePercentage REAL NOT NULL,
-        visceralFatLevel INTEGER NOT NULL,
+        visceralFatLevel REAL NOT NULL, -- UBAH DARI INTEGER KE REAL
         restingMetabolism INTEGER NOT NULL,
         bodyAge INTEGER NOT NULL,
         subcutaneousFatPercentage REAL NOT NULL DEFAULT 0.0,
@@ -74,10 +74,74 @@ class DatabaseService {
       await db.execute('CREATE INDEX IF NOT EXISTS idx_whatsapp ON omron_data(whatsappNumber)');
     }
     
+    if (oldVersion < 4) {
+      // UPGRADE VISCERAL FAT KE REAL UNTUK VERSION 4
+      // SQLite tidak support ALTER COLUMN, jadi kita harus:
+      // 1. Buat tabel baru dengan schema yang benar
+      // 2. Copy data dari tabel lama
+      // 3. Drop tabel lama
+      // 4. Rename tabel baru
+      
+      await db.execute('''
+        CREATE TABLE omron_data_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          timestamp INTEGER NOT NULL,
+          patientName TEXT NOT NULL,
+          whatsappNumber TEXT,
+          age INTEGER NOT NULL,
+          gender TEXT NOT NULL,
+          height REAL NOT NULL,
+          weight REAL NOT NULL,
+          bodyFatPercentage REAL NOT NULL,
+          bmi REAL NOT NULL,
+          skeletalMusclePercentage REAL NOT NULL,
+          visceralFatLevel REAL NOT NULL,
+          restingMetabolism INTEGER NOT NULL,
+          bodyAge INTEGER NOT NULL,
+          subcutaneousFatPercentage REAL NOT NULL DEFAULT 0.0,
+          segmentalSubcutaneousFat TEXT NOT NULL DEFAULT '{"trunk": 0.0, "rightArm": 0.0, "leftArm": 0.0, "rightLeg": 0.0, "leftLeg": 0.0}',
+          segmentalSkeletalMuscle TEXT NOT NULL DEFAULT '{"trunk": 0.0, "rightArm": 0.0, "leftArm": 0.0, "rightLeg": 0.0, "leftLeg": 0.0}',
+          sameAgeComparison REAL NOT NULL DEFAULT 50.0
+        )
+      ''');
+      
+      // Copy data dari tabel lama ke tabel baru
+      await db.execute('''
+        INSERT INTO omron_data_new 
+        SELECT 
+          id,
+          timestamp,
+          patientName,
+          whatsappNumber,
+          age,
+          gender,
+          height,
+          weight,
+          bodyFatPercentage,
+          bmi,
+          skeletalMusclePercentage,
+          CAST(visceralFatLevel AS REAL) as visceralFatLevel,
+          restingMetabolism,
+          bodyAge,
+          subcutaneousFatPercentage,
+          segmentalSubcutaneousFat,
+          segmentalSkeletalMuscle,
+          sameAgeComparison
+        FROM omron_data
+      ''');
+      
+      // Drop tabel lama
+      await db.execute('DROP TABLE omron_data');
+      
+      // Rename tabel baru
+      await db.execute('ALTER TABLE omron_data_new RENAME TO omron_data');
+    }
+    
     // Create indexes if they don't exist
     await db.execute('CREATE INDEX IF NOT EXISTS idx_patient_name ON omron_data(patientName)');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_timestamp ON omron_data(timestamp)');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_patient_timestamp ON omron_data(patientName, timestamp)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_whatsapp ON omron_data(whatsappNumber)');
   }
 
   // Insert new Omron data
@@ -432,7 +496,7 @@ class DatabaseService {
     };
   }
 
-  // Search functionality - UPDATED UNTUK WHATSAPP
+  // Search functionality - UPDATED UNTUK WHATSAPP DAN VISCERAL FAT DECIMAL
   Future<List<OmronData>> searchOmronData({
     String? patientName,
     String? whatsappNumber, // PARAMETER BARU
@@ -442,6 +506,8 @@ class DatabaseService {
     double? maxBmi,
     double? minBodyFat,
     double? maxBodyFat,
+    double? minVisceralFat, // UBAH KE DOUBLE
+    double? maxVisceralFat, // UBAH KE DOUBLE
     int? minAge,
     int? maxAge,
     String? gender,
@@ -493,6 +559,17 @@ class DatabaseService {
       args.add(maxBodyFat);
     }
     
+    // UPDATED: VISCERAL FAT SEKARANG DOUBLE
+    if (minVisceralFat != null) {
+      conditions.add('visceralFatLevel >= ?');
+      args.add(minVisceralFat);
+    }
+    
+    if (maxVisceralFat != null) {
+      conditions.add('visceralFatLevel <= ?');
+      args.add(maxVisceralFat);
+    }
+    
     if (minAge != null) {
       conditions.add('age >= ?');
       args.add(minAge);
@@ -531,7 +608,7 @@ class DatabaseService {
     });
   }
 
-  // Export data as CSV string - UPDATED UNTUK WHATSAPP
+  // Export data as CSV string - UPDATED UNTUK WHATSAPP DAN VISCERAL FAT DECIMAL
   Future<String> exportDataAsCSV({String? patientName}) async {
     List<OmronData> data;
     
@@ -557,7 +634,7 @@ class DatabaseService {
           '"${item.patientName}","${item.whatsappNumber ?? ''}",'  // TAMBAH WHATSAPP DATA
           '${item.age},"${item.gender}",${item.height},'
           '${item.weight},${item.bodyFatPercentage},${item.bmi},'
-          '${item.skeletalMusclePercentage},${item.visceralFatLevel},'
+          '${item.skeletalMusclePercentage},${item.visceralFatLevel},' // SEKARANG DOUBLE
           '${item.restingMetabolism},${item.bodyAge},${item.subcutaneousFatPercentage},'
           '${item.segmentalSubcutaneousFat['trunk']},'
           '${item.segmentalSubcutaneousFat['rightArm']},'
