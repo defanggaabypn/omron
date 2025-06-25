@@ -2,17 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/omron_data.dart';
 import '../services/whatsapp_direct_service.dart';
+import '../services/database_service.dart'; // IMPORT BARU
 
 class WhatsAppFormDialog extends StatefulWidget {
   final OmronData data;
   final String? pdfPath;
   final String? prefilledNumber;
+  final VoidCallback? onWhatsAppSent; // CALLBACK BARU untuk update UI parent
 
   const WhatsAppFormDialog({
     super.key,
     required this.data,
     this.pdfPath,
     this.prefilledNumber,
+    this.onWhatsAppSent, // PARAMETER BARU
   });
 
   @override
@@ -22,6 +25,7 @@ class WhatsAppFormDialog extends StatefulWidget {
 class _WhatsAppFormDialogState extends State<WhatsAppFormDialog> {
   final _formKey = GlobalKey<FormState>();
   final _phoneController = TextEditingController();
+  final _databaseService = DatabaseService(); // INSTANCE DATABASE SERVICE
   String _selectedCaptionType = 'basic';
   bool _isLoading = false;
 
@@ -71,6 +75,7 @@ class _WhatsAppFormDialogState extends State<WhatsAppFormDialog> {
   @override
   Widget build(BuildContext context) {
     final bool hasPrefilledNumber = widget.prefilledNumber != null && widget.prefilledNumber!.isNotEmpty;
+    final bool isAlreadySent = widget.data.isWhatsAppSent; // CEK STATUS PENGIRIMAN
     
     return Dialog(
       shape: RoundedRectangleBorder(
@@ -79,26 +84,36 @@ class _WhatsAppFormDialogState extends State<WhatsAppFormDialog> {
       child: Container(
         constraints: BoxConstraints(
           maxWidth: 400,
-          // TAMBAHKAN CONSTRAINT TINGGI MAKSIMUM
           maxHeight: MediaQuery.of(context).size.height * 0.85,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // HEADER TETAP (TIDAK SCROLL)
+            // HEADER TETAP dengan indikator status
             Container(
               padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                // UBAH WARNA BERDASARKAN STATUS
+                color: isAlreadySent ? Colors.green[100] : Colors.blue[50],
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
+                border: Border.all(
+                  color: isAlreadySent ? Colors.green[300]! : Colors.blue[300]!,
+                ),
+              ),
               child: Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.green[100],
+                      color: isAlreadySent ? Colors.green[200] : Colors.blue[200],
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
-                      Icons.chat,
-                      color: Colors.green[700],
+                      isAlreadySent ? Icons.check_circle : Icons.chat,
+                      color: isAlreadySent ? Colors.green[700] : Colors.blue[700],
                       size: 24,
                     ),
                   ),
@@ -108,11 +123,11 @@ class _WhatsAppFormDialogState extends State<WhatsAppFormDialog> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Kirim ke WhatsApp',
+                          isAlreadySent ? 'Kirim Ulang ke WhatsApp' : 'Kirim ke WhatsApp',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Colors.green[700],
+                            color: isAlreadySent ? Colors.green[700] : Colors.blue[700],
                           ),
                         ),
                         Text(
@@ -125,6 +140,18 @@ class _WhatsAppFormDialogState extends State<WhatsAppFormDialog> {
                             fontWeight: hasPrefilledNumber ? FontWeight.w600 : FontWeight.normal,
                           ),
                         ),
+                        // TAMBAHKAN INFO STATUS PENGIRIMAN
+                        if (isAlreadySent && widget.data.whatsappSentAt != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            'Terkirim: ${_formatSentTime(widget.data.whatsappSentAt!)}',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.green[600],
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -146,8 +173,36 @@ class _WhatsAppFormDialogState extends State<WhatsAppFormDialog> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // INFO BANNER JIKA ADA PREFILLED NUMBER
-                      if (hasPrefilledNumber) ...[
+                      const SizedBox(height: 16),
+                      
+                      // STATUS BANNER
+                      if (isAlreadySent) ...[
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.amber[50],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.amber[300]!),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.info_outline, color: Colors.amber[700], size: 20),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Laporan ini sudah pernah dikirim ke WhatsApp. Anda dapat mengirim ulang jika diperlukan.',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.amber[700],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ] else if (hasPrefilledNumber) ...[
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(12),
@@ -336,7 +391,10 @@ class _WhatsAppFormDialogState extends State<WhatsAppFormDialog> {
                             : Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(Icons.send, size: 18),
+                                  Icon(
+                                    isAlreadySent ? Icons.repeat : Icons.send, 
+                                    size: 18
+                                  ),
                                   if (hasPrefilledNumber) ...[
                                     const SizedBox(width: 4),
                                     Icon(Icons.flash_on, size: 14, color: Colors.yellow[200]),
@@ -346,12 +404,18 @@ class _WhatsAppFormDialogState extends State<WhatsAppFormDialog> {
                           label: Text(
                             _isLoading 
                               ? 'Mengirim...' 
-                              : hasPrefilledNumber 
-                                ? 'Kirim Cepat' 
-                                : 'Kirim'
+                              : isAlreadySent
+                                ? 'Kirim Ulang'
+                                : hasPrefilledNumber 
+                                  ? 'Kirim Cepat' 
+                                  : 'Kirim'
                           ),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: hasPrefilledNumber ? Colors.green[600] : Colors.green[700],
+                            backgroundColor: isAlreadySent 
+                              ? Colors.orange[600]
+                              : hasPrefilledNumber 
+                                ? Colors.green[600] 
+                                : Colors.green[700],
                             foregroundColor: Colors.white,
                           ),
                         ),
@@ -363,12 +427,18 @@ class _WhatsAppFormDialogState extends State<WhatsAppFormDialog> {
                   
                   // Info text
                   Text(
-                    hasPrefilledNumber
-                      ? 'Nomor sudah terisi dari data pasien. Caption akan dikirim ke WhatsApp, PDF dapat dibagikan secara terpisah'
-                      : 'Caption akan dikirim ke WhatsApp, PDF dapat dibagikan secara terpisah',
+                    isAlreadySent
+                      ? 'Laporan sudah pernah dikirim. Caption akan dikirim ulang ke WhatsApp, PDF dapat dibagikan secara terpisah'
+                      : hasPrefilledNumber
+                        ? 'Nomor sudah terisi dari data pasien. Caption akan dikirim ke WhatsApp, PDF dapat dibagikan secara terpisah'
+                        : 'Caption akan dikirim ke WhatsApp, PDF dapat dibagikan secara terpisah',
                     style: TextStyle(
                       fontSize: 11,
-                      color: hasPrefilledNumber ? Colors.green[600] : Colors.grey[500],
+                      color: isAlreadySent 
+                        ? Colors.orange[600]
+                        : hasPrefilledNumber 
+                          ? Colors.green[600] 
+                          : Colors.grey[500],
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -379,6 +449,22 @@ class _WhatsAppFormDialogState extends State<WhatsAppFormDialog> {
         ),
       ),
     );
+  }
+
+  // METHOD BARU: Format waktu pengiriman
+  String _formatSentTime(DateTime sentTime) {
+    final now = DateTime.now();
+    final difference = now.difference(sentTime);
+    
+    if (difference.inMinutes < 1) {
+      return 'Baru saja';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes} menit yang lalu';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours} jam yang lalu';
+    } else {
+      return '${difference.inDays} hari yang lalu';
+    }
   }
 
   void _previewCaption() {
@@ -442,13 +528,30 @@ class _WhatsAppFormDialogState extends State<WhatsAppFormDialog> {
         pdfPath: widget.pdfPath,
       );
       
+      // UPDATE STATUS DI DATABASE SETELAH BERHASIL KIRIM
+      if (widget.data.id != null) {
+        await _databaseService.updateWhatsAppSentStatus(
+          widget.data.id!, 
+          isSent: true,
+        );
+        
+        // PANGGIL CALLBACK UNTUK UPDATE UI PARENT
+        if (widget.onWhatsAppSent != null) {
+          widget.onWhatsAppSent!();
+        }
+      }
+      
       if (mounted) {
         Navigator.pop(context);
         final bool hasPrefilledNumber = widget.prefilledNumber != null && widget.prefilledNumber!.isNotEmpty;
+        final bool isAlreadySent = widget.data.isWhatsAppSent;
+        
         _showSuccessSnackBar(
-          hasPrefilledNumber 
-            ? 'WhatsApp terbuka dengan caption ke nomor tersimpan! PDF dapat dibagikan secara terpisah.'
-            : 'WhatsApp terbuka dengan caption! PDF dapat dibagikan secara terpisah.'
+          isAlreadySent
+            ? 'WhatsApp terbuka dengan caption (kirim ulang)! Status telah diperbarui. PDF dapat dibagikan secara terpisah.'
+            : hasPrefilledNumber 
+              ? 'WhatsApp terbuka dengan caption ke nomor tersimpan! Status telah ditandai sebagai terkirim. PDF dapat dibagikan secara terpisah.'
+              : 'WhatsApp terbuka dengan caption! Status telah ditandai sebagai terkirim. PDF dapat dibagikan secara terpisah.'
         );
       }
     } catch (e) {
@@ -468,6 +571,7 @@ class _WhatsAppFormDialogState extends State<WhatsAppFormDialog> {
         content: Text(message),
         backgroundColor: Colors.green[700],
         behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 4), // DURASI LEBIH LAMA UNTUK MESSAGE PANJANG
       ),
     );
   }
