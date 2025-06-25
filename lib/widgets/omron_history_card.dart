@@ -164,7 +164,7 @@ class OmronHistoryCard extends StatelessWidget {
                         value: 'edit',
                         child: Row(
                           children: [
-                            Icon(Icons.edit, color: Colors.grey[600], size: 20),
+                            Icon(Icons.edit, color: Colors.blue[600], size: 20), 
                             const SizedBox(width: 8),
                             const Text('Edit'),
                           ],

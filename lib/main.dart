@@ -3,6 +3,8 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'screens/omron_input_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/analytics_screen.dart';
+import 'screens/omron_edit_screen.dart'; // IMPORT BARU
+import 'models/omron_data.dart'; // IMPORT BARU
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,7 +19,7 @@ class OmronApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Omron HBF-516B Manual Input',
+      title: 'Omron HBF-375 Manual Input',
       theme: ThemeData(
         primarySwatch: Colors.orange,
         visualDensity: VisualDensity.adaptivePlatformDensity,
@@ -47,6 +49,17 @@ class OmronApp extends StatelessWidget {
         '/': (context) => OmronInputScreen(),
         '/history': (context) => HistoryScreen(),
         '/analytics': (context) => AnalyticsScreen(),
+      },
+      // TAMBAHKAN onGenerateRoute untuk handle edit screen dengan parameter
+      onGenerateRoute: (settings) {
+        if (settings.name == '/edit') {
+          final OmronData data = settings.arguments as OmronData;
+          return MaterialPageRoute(
+            builder: (context) => OmronEditScreen(data: data),
+            settings: settings,
+          );
+        }
+        return null;
       },
       debugShowCheckedModeBanner: false,
     );

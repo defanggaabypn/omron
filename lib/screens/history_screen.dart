@@ -5,7 +5,6 @@ import '../services/database_service.dart';
 import '../widgets/omron_history_card.dart';
 import '../widgets/filter_dialog.dart';
 import '../widgets/omron_result_card.dart';
-import '../widgets/whatsapp_form_dialog.dart'; // IMPORT BARU
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({Key? key}) : super(key: key);
@@ -23,7 +22,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
   String? _selectedPatient;
   DateTime? _startDate;
   DateTime? _endDate;
-  String? _whatsappFilter; // FILTER BARU: 'all', 'sent', 'pending', 'none'
   bool _isLoading = true;
   
   final TextEditingController _searchController = TextEditingController();
@@ -72,30 +70,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
       filtered = filtered.where((data) => 
         data.timestamp.isAfter(_startDate!) && 
         data.timestamp.isBefore(_endDate!.add(const Duration(days: 1)))).toList();
-    }
-
-    // FILTER BARU: Filter by WhatsApp status
-    if (_whatsappFilter != null) {
-      switch (_whatsappFilter) {
-        case 'sent':
-          filtered = filtered.where((data) => data.isWhatsAppSent).toList();
-          break;
-        case 'pending':
-          filtered = filtered.where((data) => 
-            !data.isWhatsAppSent && 
-            data.whatsappNumber != null && 
-            data.whatsappNumber!.isNotEmpty).toList();
-          break;
-        case 'none':
-          filtered = filtered.where((data) => 
-            data.whatsappNumber == null || 
-            data.whatsappNumber!.isEmpty).toList();
-          break;
-        case 'all':
-        default:
-          // No additional filtering
-          break;
-      }
     }
 
     // Filter by search text
@@ -150,17 +124,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
           onSelected: _handleMenuSelection,
           itemBuilder: (context) => [
             PopupMenuItem(
-              value: 'whatsapp_stats',
-              child: Row(
-                children: [
-                  Icon(Icons.chat_bubble_outline, color: Colors.green[600]),
-                  const SizedBox(width: 8),
-                  const Text('Statistik WhatsApp'),
-                ],
-              ),
-            ),
-            const PopupMenuDivider(),
-            PopupMenuItem(
               value: 'export',
               child: Row(
                 children: [
@@ -213,7 +176,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return Column(
       children: [
         _buildSearchAndStats(),
-        _buildWhatsAppFilter(), // FILTER BARU
         Expanded(
           child: _filteredData.isEmpty 
             ? _buildEmptyState() 
@@ -262,95 +224,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  // WIDGET BARU: Filter WhatsApp Status
-  Widget _buildWhatsAppFilter() {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            Text(
-              'Status WhatsApp: ',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey[700],
-              ),
-            ),
-            const SizedBox(width: 8),
-            _buildFilterChip('Semua', 'all', Colors.grey),
-            const SizedBox(width: 8),
-            _buildFilterChip('Terkirim', 'sent', Colors.green),
-            const SizedBox(width: 8),
-            _buildFilterChip('Pending', 'pending', Colors.orange),
-            const SizedBox(width: 8),
-            _buildFilterChip('Tanpa WA', 'none', Colors.blue),
-          ],
-        ),
-      ),
-    );
-  }
-
-Widget _buildFilterChip(String label, String value, Color color) {
-  final bool isSelected = _whatsappFilter == value;
-  
-  return FilterChip(
-    label: Text(
-      label,
-      style: TextStyle(
-        fontSize: 12,
-        color: isSelected ? Colors.white : _getColorShade(color, 700),
-        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-      ),
-    ),
-    selected: isSelected,
-    onSelected: (bool selected) {
-      setState(() {
-        _whatsappFilter = selected ? value : null;
-      });
-      _filterData();
-    },
-    backgroundColor: color.withOpacity(0.1),
-    selectedColor: _getColorShade(color, 600),
-    checkmarkColor: Colors.white,
-    side: BorderSide(color: _getColorShade(color, 300)),
-  );
-}
-
-// Helper method untuk mendapatkan shade warna
-Color _getColorShade(Color baseColor, int shade) {
-  if (baseColor == Colors.grey) {
-    return Colors.grey[shade] ?? Colors.grey;
-  } else if (baseColor == Colors.green) {
-    return Colors.green[shade] ?? Colors.green;
-  } else if (baseColor == Colors.orange) {
-    return Colors.orange[shade] ?? Colors.orange;
-  } else if (baseColor == Colors.blue) {
-    return Colors.blue[shade] ?? Colors.blue;
-  } else {
-    // Fallback untuk warna lain
-    return baseColor;
-  }
-}
-
   Widget _buildQuickStats() {
     if (_filteredData.isEmpty) return const SizedBox.shrink();
 
     final totalPatients = _filteredData.map((e) => e.patientName).toSet().length;
     final avgWeight = _filteredData.map((e) => e.weight).reduce((a, b) => a + b) / _filteredData.length;
     final avgBMI = _filteredData.map((e) => e.bmi).reduce((a, b) => a + b) / _filteredData.length;
-    
-    // STATISTIK WHATSAPP BARU
-    final withWhatsApp = _filteredData.where((e) => 
-      e.whatsappNumber != null && e.whatsappNumber!.isNotEmpty).length;
-    final sentWhatsApp = _filteredData.where((e) => e.isWhatsAppSent).length;
 
     return LayoutBuilder(
       builder: (context, constraints) {
+        // Responsive layout berdasarkan lebar layar
         if (constraints.maxWidth < 600) {
-          // Layout untuk mobile (2x3 grid)
+          // Layout untuk mobile (2x2 grid)
           return Column(
             children: [
               Row(
@@ -369,28 +254,6 @@ Color _getColorShade(Color baseColor, int shade) {
                       'Pasien',
                       totalPatients.toString(),
                       Icons.people,
-                      Colors.green,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildStatCard(
-                      'Dengan WA',
-                      withWhatsApp.toString(),
-                      Icons.chat,
-                      Colors.green,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _buildStatCard(
-                      'Terkirim WA',
-                      sentWhatsApp.toString(),
-                      Icons.check_circle,
                       Colors.green,
                     ),
                   ),
@@ -438,24 +301,6 @@ Color _getColorShade(Color baseColor, int shade) {
                   'Pasien',
                   totalPatients.toString(),
                   Icons.people,
-                  Colors.green,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildStatCard(
-                  'Dengan WA',
-                  withWhatsApp.toString(),
-                  Icons.chat,
-                  Colors.green,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildStatCard(
-                  'Terkirim WA',
-                  sentWhatsApp.toString(),
-                  Icons.check_circle,
                   Colors.green,
                 ),
               ),
@@ -589,7 +434,6 @@ Color _getColorShade(Color baseColor, int shade) {
                   onTap: () => _showDetailDialog(data),
                   onEdit: () => _editData(data),
                   onDelete: () => _deleteData(data),
-                  onWhatsApp: () => _showWhatsAppDialog(data), // CALLBACK BARU
                 );
               },
             );
@@ -611,87 +455,11 @@ Color _getColorShade(Color baseColor, int shade) {
                   onTap: () => _showDetailDialog(data),
                   onEdit: () => _editData(data),
                   onDelete: () => _deleteData(data),
-                  onWhatsApp: () => _showWhatsAppDialog(data), // CALLBACK BARU
                 );
               },
             );
           }
         },
-      ),
-    );
-  }
-
-  // METHOD BARU: Show WhatsApp Dialog
-  void _showWhatsAppDialog(OmronData data) {
-    showDialog(
-      context: context,
-      builder: (context) => WhatsAppFormDialog(
-        data: data,
-        prefilledNumber: data.whatsappNumber,
-        onWhatsAppSent: () {
-          // REFRESH DATA SETELAH KIRIM WHATSAPP
-          _loadData();
-        },
-      ),
-    );
-  }
-
-  // METHOD BARU: Show WhatsApp Statistics
-  void _showWhatsAppStatistics() async {
-    try {
-      final stats = await _databaseService.getWhatsAppStatistics();
-      
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Row(
-            children: [
-              Icon(Icons.bar_chart, color: Colors.green[700]),
-              const SizedBox(width: 8),
-              const Text('Statistik WhatsApp'),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildStatRow('Total Record', stats['totalRecords'].toString()),
-              _buildStatRow('Dengan WhatsApp', stats['withWhatsApp'].toString()),
-              _buildStatRow('Sudah Terkirim', stats['sentWhatsApp'].toString()),
-              _buildStatRow('Belum Terkirim', stats['pendingWhatsApp'].toString()),
-              const Divider(),
-              if (stats['withWhatsApp'] > 0) ...[
-                _buildStatRow(
-                  'Persentase Terkirim', 
-                  '${((stats['sentWhatsApp'] / stats['withWhatsApp']) * 100).toStringAsFixed(1)}%'
-                ),
-              ],
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
-    } catch (e) {
-      _showErrorSnackBar('Gagal memuat statistik WhatsApp: $e');
-    }
-  }
-
-  Widget _buildStatRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(fontSize: 14)),
-          Text(
-            value, 
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-          ),
-        ],
       ),
     );
   }
@@ -722,7 +490,6 @@ Color _getColorShade(Color baseColor, int shade) {
       _selectedPatient = null;
       _startDate = null;
       _endDate = null;
-      _whatsappFilter = null; // RESET FILTER WHATSAPP
     });
     _searchController.clear();
     _filterData();
@@ -767,14 +534,11 @@ Color _getColorShade(Color baseColor, int shade) {
                 ),
                 child: Column(
                   children: [
-                    // Header dengan indikator WhatsApp status
+                    // Header
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        // UBAH WARNA BERDASARKAN STATUS WHATSAPP
-                        color: data.isWhatsAppSent 
-                          ? Colors.green[700]
-                          : Colors.orange[700],
+                        color: Colors.orange[700],
                         borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(12),
                           topRight: Radius.circular(12),
@@ -783,36 +547,19 @@ Color _getColorShade(Color baseColor, int shade) {
                       child: Row(
                         children: [
                           Icon(
-                            data.isWhatsAppSent 
-                              ? Icons.check_circle
-                              : Icons.analytics,
+                            Icons.analytics,
                             color: Colors.white,
                             size: 24,
                           ),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Detail Analisis - ${data.patientName}',
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                if (data.isWhatsAppSent) ...[
-                                  const SizedBox(height: 4),
-                                  const Text(
-                                    'Laporan sudah dikirim via WhatsApp',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.white70,
-                                    ),
-                                  ),
-                                ],
-                              ],
+                            child: Text(
+                              'Detail Analisis - ${data.patientName}',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                           IconButton(
@@ -839,14 +586,21 @@ Color _getColorShade(Color baseColor, int shade) {
     );
   }
 
-  void _editData(OmronData data) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Fitur edit akan segera tersedia'),
-        backgroundColor: Colors.orange[700],
-      ),
-    );
+void _editData(OmronData data) async {
+  // Navigate to edit screen dengan data
+  final result = await Navigator.pushNamed(
+    context, 
+    '/edit', 
+    arguments: data,
+  );
+  
+  // Jika edit berhasil, refresh data
+  if (result == true) {
+    await _loadData();
+    _showSuccessSnackBar('Data berhasil diperbarui dan dimuat ulang');
   }
+}
+
 
   void _deleteData(OmronData data) {
     showDialog(
@@ -889,9 +643,6 @@ Color _getColorShade(Color baseColor, int shade) {
 
   void _handleMenuSelection(String value) {
     switch (value) {
-      case 'whatsapp_stats':
-        _showWhatsAppStatistics();
-        break;
       case 'export':
         _exportData();
         break;
