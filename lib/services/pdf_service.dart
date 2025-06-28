@@ -647,9 +647,9 @@ class PDFService {
   // Helper functions for categorization
   static PdfColor _getAssessmentColor(String assessment) {
     switch (assessment) {
-      case 'Excellent': return PdfColors.green;
-      case 'Good': return PdfColors.blue;
-      case 'Fair': return PdfColors.orange;
+      case 'Sangat Baik': return PdfColors.green;
+      case 'Baik': return PdfColors.blue;
+      case 'Cukup': return PdfColors.orange;
       default: return PdfColors.red;
     }
   }

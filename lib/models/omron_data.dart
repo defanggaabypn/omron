@@ -26,11 +26,12 @@ class OmronData {
   final bool isWhatsAppSent;
   final DateTime? whatsappSentAt;
   
-  // Additional calculated fields
+  // Additional calculated fields - FIXED: Konsisten dengan kategori
   final String bmiCategory;
   final String bodyFatCategory;
   final String overallAssessment;
   final String sameAgeCategory;
+  final String bodyAgeAssessment; // BARU: Penilaian usia tubuh vs usia asli
 
   OmronData({
     this.id,
@@ -56,7 +57,8 @@ class OmronData {
   }) : bmiCategory = _getBMICategory(bmi),
        bodyFatCategory = _getBodyFatCategory(bodyFatPercentage, gender),
        overallAssessment = _getOverallAssessment(bmi, bodyFatPercentage, visceralFatLevel),
-       sameAgeCategory = _getSameAgeCategory(sameAgeComparison);
+       sameAgeCategory = _getSameAgeCategory(sameAgeComparison),
+       bodyAgeAssessment = _getBodyAgeAssessment(bodyAge, age); // BARU
 
   static String _getBMICategory(double bmi) {
     if (bmi < 18.5) return 'Underweight';
@@ -81,6 +83,7 @@ class OmronData {
     }
   }
 
+  // FIXED: Konsisten dengan yang diharapkan di UI
   static String _getSameAgeCategory(double percentile) {
     if (percentile >= 90) return 'Excellent';
     if (percentile >= 75) return 'Good';
@@ -89,6 +92,7 @@ class OmronData {
     return 'Poor';
   }
 
+  // FIXED: Konsisten dengan yang diharapkan di UI
   static String _getOverallAssessment(double bmi, double bodyFat, double visceralFat) {
     int score = 0;
     
@@ -101,23 +105,73 @@ class OmronData {
     if (visceralFat <= 9.0) score += 2;
     else if (visceralFat <= 14.0) score += 1;
     
-    if (score >= 5) return 'Excellent';
-    if (score >= 3) return 'Good';
-    if (score >= 1) return 'Fair';
-    return 'Needs Improvement';
+    if (score >= 5) return 'Sangat Baik';
+    if (score >= 3) return 'Baik';
+    if (score >= 1) return 'Cukup';
+    return 'Perlu Diperbaiki';
+  }
+
+  // BARU: Penilaian usia tubuh vs usia asli
+  static String _getBodyAgeAssessment(int bodyAge, int actualAge) {
+    final int difference = bodyAge - actualAge;
+    
+    if (difference <= -10) return 'Sangat Muda'; // Body age 10+ tahun lebih muda
+    if (difference <= -5) return 'Lebih Muda';   // Body age 5-10 tahun lebih muda
+    if (difference <= -2) return 'Sedikit Muda'; // Body age 2-5 tahun lebih muda
+    if (difference <= 2) return 'Sesuai Usia';   // Body age ±2 tahun dari usia asli
+    if (difference <= 5) return 'Sedikit Tua';   // Body age 2-5 tahun lebih tua
+    if (difference <= 10) return 'Lebih Tua';    // Body age 5-10 tahun lebih tua
+    return 'Sangat Tua';                         // Body age 10+ tahun lebih tua
+  }
+
+  // HELPER: Get body age assessment description (tanpa Color)
+  static String getBodyAgeAssessmentDescription(String assessment, int bodyAge, int actualAge) {
+    final int difference = bodyAge - actualAge;
+    final String diffText = difference > 0 ? '+${difference}' : '${difference}';
+    
+    switch (assessment) {
+      case 'Sangat Muda':
+        return 'Luar biasa! Usia tubuh Anda ${diffText} tahun dari usia sebenarnya. Pertahankan gaya hidup sehat ini.';
+      case 'Lebih Muda':
+        return 'Bagus! Usia tubuh Anda ${diffText} tahun dari usia sebenarnya. Kondisi fisik sangat baik.';
+      case 'Sedikit Muda':
+        return 'Baik! Usia tubuh Anda ${diffText} tahun dari usia sebenarnya. Terus jaga pola hidup sehat.';
+      case 'Sesuai Usia':
+        return 'Normal. Usia tubuh sesuai dengan usia kronologis Anda (${diffText} tahun).';
+      case 'Sedikit Tua':
+        return 'Perhatian. Usia tubuh Anda ${diffText} tahun dari usia sebenarnya. Tingkatkan aktivitas fisik.';
+      case 'Lebih Tua':
+        return 'Perlu perbaikan. Usia tubuh Anda ${diffText} tahun dari usia sebenarnya. Konsultasi dengan ahli kesehatan.';
+      case 'Sangat Tua':
+        return 'Memerlukan perhatian serius. Usia tubuh Anda ${diffText} tahun dari usia sebenarnya. Segera konsultasi medis.';
+      default:
+        return 'Perbedaan usia tubuh: ${diffText} tahun dari usia sebenarnya.';
+    }
   }
 
   // UPDATED: Helper methods dengan struktur baru
   String get segmentalSubcutaneousFatJson {
-    return '{"wholeBody": ${segmentalSubcutaneousFat['wholeBody']}, "trunk": ${segmentalSubcutaneousFat['trunk']}, "arms": ${segmentalSubcutaneousFat['arms']}, "legs": ${segmentalSubcutaneousFat['legs']}}';
+    return '{"wholeBody": ${segmentalSubcutaneousFat['wholeBody'] ?? 0.0}, "trunk": ${segmentalSubcutaneousFat['trunk'] ?? 0.0}, "arms": ${segmentalSubcutaneousFat['arms'] ?? 0.0}, "legs": ${segmentalSubcutaneousFat['legs'] ?? 0.0}}';
   }
 
   String get segmentalSkeletalMuscleJson {
-    return '{"wholeBody": ${segmentalSkeletalMuscle['wholeBody']}, "trunk": ${segmentalSkeletalMuscle['trunk']}, "arms": ${segmentalSkeletalMuscle['arms']}, "legs": ${segmentalSkeletalMuscle['legs']}}';
+    return '{"wholeBody": ${segmentalSkeletalMuscle['wholeBody'] ?? 0.0}, "trunk": ${segmentalSkeletalMuscle['trunk'] ?? 0.0}, "arms": ${segmentalSkeletalMuscle['arms'] ?? 0.0}, "legs": ${segmentalSkeletalMuscle['legs'] ?? 0.0}}';
   }
 
-  // UPDATED: Parse method dengan struktur baru
-  static Map<String, double> _parseSegmentalData(String jsonString) {
+  // UPDATED: Parse method dengan struktur baru dan null safety
+  static Map<String, double> _parseSegmentalData(String? jsonString) {
+    // Default values jika null atau kosong
+    final Map<String, double> defaultValues = {
+      'wholeBody': 0.0,
+      'trunk': 0.0,
+      'arms': 0.0,
+      'legs': 0.0,
+    };
+    
+    if (jsonString == null || jsonString.isEmpty) {
+      return defaultValues;
+    }
+    
     try {
       final cleanJson = jsonString.replaceAll(RegExp(r'[{}"]'), '');
       final pairs = cleanJson.split(', ');
@@ -126,24 +180,23 @@ class OmronData {
       for (String pair in pairs) {
         final keyValue = pair.split(': ');
         if (keyValue.length == 2) {
-          result[keyValue[0]] = double.tryParse(keyValue[1]) ?? 0.0;
+          final key = keyValue[0].trim();
+          final value = double.tryParse(keyValue[1].trim()) ?? 0.0;
+          result[key] = value;
         }
       }
       
-      // Ensure all required keys exist
-      if (!result.containsKey('wholeBody')) result['wholeBody'] = 0.0;
-      if (!result.containsKey('trunk')) result['trunk'] = 0.0;
-      if (!result.containsKey('arms')) result['arms'] = 0.0;
-      if (!result.containsKey('legs')) result['legs'] = 0.0;
+      // Ensure all required keys exist with default values
+      for (String key in defaultValues.keys) {
+        if (!result.containsKey(key)) {
+          result[key] = defaultValues[key]!;
+        }
+      }
       
       return result;
     } catch (e) {
-      return {
-        'wholeBody': 0.0,
-        'trunk': 0.0,
-        'arms': 0.0,
-        'legs': 0.0,
-      };
+      print('Error parsing segmental data: $e');
+      return defaultValues;
     }
   }
 
@@ -178,25 +231,26 @@ class OmronData {
     };
   }
 
+  // UPDATED: fromMap method dengan null safety
   factory OmronData.fromMap(Map<String, dynamic> map) {
     return OmronData(
       id: map['id'],
-      timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp']),
-      patientName: map['patientName'],
+      timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp'] ?? DateTime.now().millisecondsSinceEpoch),
+      patientName: map['patientName'] ?? '',
       whatsappNumber: map['whatsappNumber'],
-      age: map['age'],
-      gender: map['gender'],
-      height: (map['height'] as num).toDouble(),
-      weight: (map['weight'] as num).toDouble(),
-      bodyFatPercentage: (map['bodyFatPercentage'] as num).toDouble(),
-      bmi: (map['bmi'] as num).toDouble(),
-      skeletalMusclePercentage: (map['skeletalMusclePercentage'] as num).toDouble(),
-      visceralFatLevel: (map['visceralFatLevel'] as num).toDouble(),
-      restingMetabolism: map['restingMetabolism'],
-      bodyAge: map['bodyAge'],
+      age: map['age'] ?? 0,
+      gender: map['gender'] ?? 'Male',
+      height: ((map['height'] ?? 0.0) as num).toDouble(),
+      weight: ((map['weight'] ?? 0.0) as num).toDouble(),
+      bodyFatPercentage: ((map['bodyFatPercentage'] ?? 0.0) as num).toDouble(),
+      bmi: ((map['bmi'] ?? 0.0) as num).toDouble(),
+      skeletalMusclePercentage: ((map['skeletalMusclePercentage'] ?? 0.0) as num).toDouble(),
+      visceralFatLevel: ((map['visceralFatLevel'] ?? 0.0) as num).toDouble(),
+      restingMetabolism: map['restingMetabolism'] ?? 0,
+      bodyAge: map['bodyAge'] ?? 0,
       subcutaneousFatPercentage: ((map['subcutaneousFatPercentage'] ?? 0.0) as num).toDouble(),
-      segmentalSubcutaneousFat: _parseSegmentalData(map['segmentalSubcutaneousFat'] ?? '{"wholeBody": 0.0, "trunk": 0.0, "arms": 0.0, "legs": 0.0}'),
-      segmentalSkeletalMuscle: _parseSegmentalData(map['segmentalSkeletalMuscle'] ?? '{"wholeBody": 0.0, "trunk": 0.0, "arms": 0.0, "legs": 0.0}'),
+      segmentalSubcutaneousFat: _parseSegmentalData(map['segmentalSubcutaneousFat']),
+      segmentalSkeletalMuscle: _parseSegmentalData(map['segmentalSkeletalMuscle']),
       sameAgeComparison: ((map['sameAgeComparison'] ?? 50.0) as num).toDouble(),
       isWhatsAppSent: (map['isWhatsAppSent'] ?? 0) == 1,
       whatsappSentAt: map['whatsappSentAt'] != null 

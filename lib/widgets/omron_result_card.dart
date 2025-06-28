@@ -212,20 +212,21 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
     Color badgeColor;
     IconData badgeIcon;
     
+    // FIXED: Sesuaikan dengan kategori dari model
     switch (widget.data.overallAssessment) {
-      case 'Excellent':
+      case 'Excellent': // DARI 'Sangat Baik' KE 'Excellent'
         badgeColor = Colors.green;
         badgeIcon = Icons.star;
         break;
-      case 'Good':
+      case 'Good': // DARI 'Baik' KE 'Good'
         badgeColor = Colors.blue;
         badgeIcon = Icons.thumb_up;
         break;
-      case 'Fair':
+      case 'Fair': // DARI 'Cukup' KE 'Fair'
         badgeColor = Colors.orange;
         badgeIcon = Icons.warning;
         break;
-      default:
+      default: // 'Needs Improvement'
         badgeColor = Colors.red;
         badgeIcon = Icons.priority_high;
     }
@@ -280,7 +281,9 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
         children: [
           _buildAdvancedMeasurements(),
           const SizedBox(height: 12),
-          _buildSameAgeComparison(),
+          // _buildSameAgeComparison(),
+          // const SizedBox(height: 12),
+          _buildBodyAgeAssessment(), // TAMBAHKAN INI
           const SizedBox(height: 12),
           _buildAdvancedAnalysis(),
           const SizedBox(height: 12),
@@ -496,37 +499,117 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
               ),
             ),
             const SizedBox(width: 8),
-            Expanded(
-              child: _buildMeasurementTile(
-                'Same Age Rank',
-                '${widget.data.sameAgeComparison.toStringAsFixed(0)}th percentile',
-                Icons.compare,
-                Colors.indigo,
-              ),
-            ),
+            // Expanded(
+            //   child: _buildMeasurementTile(
+            //     'Same Age Rank',
+            //     '${widget.data.sameAgeComparison.toStringAsFixed(0)}th percentile',
+            //     Icons.compare,
+            //     Colors.indigo,
+            //   ),
+            // ),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildSameAgeComparison() {
+  // Widget _buildSameAgeComparison() {
+  //   return Container(
+  //     padding: const EdgeInsets.all(12),
+  //     decoration: BoxDecoration(
+  //       color: Colors.white,
+  //       borderRadius: BorderRadius.circular(8),
+  //       border: Border.all(color: Colors.indigo[200]!),
+  //     ),
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         Text(
+  //           '👥 Perbandingan Usia Sebaya',
+  //           style: TextStyle(
+  //             fontSize: 15,
+  //             fontWeight: FontWeight.bold,
+  //             color: Colors.indigo[700],
+  //           ),
+  //         ),
+  //         const SizedBox(height: 8),
+  //         Row(
+  //           children: [
+  //             Expanded(
+  //               child: Column(
+  //                 crossAxisAlignment: CrossAxisAlignment.start,
+  //                 children: [
+  //                   Text(
+  //                     'Posisi Anda:',
+  //                     style: TextStyle(
+  //                       fontSize: 12,
+  //                       color: Colors.grey[600],
+  //                     ),
+  //                   ),
+  //                   Text(
+  //                     '${widget.data.sameAgeComparison.toStringAsFixed(0)}th Percentile',
+  //                     style: TextStyle(
+  //                       fontSize: 16,
+  //                       fontWeight: FontWeight.bold,
+  //                       color: Colors.indigo[700],
+  //                     ),
+  //                   ),
+  //                   Text(
+  //                     widget.data.sameAgeCategory,
+  //                     style: TextStyle(
+  //                       fontSize: 14,
+  //                       fontWeight: FontWeight.w600,
+  //                       color: _getSameAgeCategoryColor(widget.data.sameAgeCategory),
+  //                     ),
+  //                   ),
+  //                 ],
+  //               ),
+  //             ),
+  //             Container(
+  //               padding: const EdgeInsets.all(8),
+  //               decoration: BoxDecoration(
+  //                 color: _getSameAgeCategoryColor(widget.data.sameAgeCategory).withValues(alpha: 0.1),
+  //                 borderRadius: BorderRadius.circular(8),
+  //               ),
+  //               child: Icon(
+  //                 _getSameAgeCategoryIcon(widget.data.sameAgeCategory),
+  //                 color: _getSameAgeCategoryColor(widget.data.sameAgeCategory),
+  //                 size: 32,
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //         const SizedBox(height: 8),
+  //         Text(
+  //           _getSameAgeDescription(widget.data.sameAgeComparison),
+  //           style: TextStyle(
+  //             fontSize: 12,
+  //             color: Colors.grey[600],
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
+
+  // TAMBAHKAN: Widget untuk Body Age Assessment
+  Widget _buildBodyAgeAssessment() {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.indigo[200]!),
+        border: Border.all(color: Colors.teal[200]!),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '👥 Perbandingan Usia Sebaya',
+            '🎂 Penilaian Usia Tubuh',
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.bold,
-              color: Colors.indigo[700],
+              color: Colors.teal[700],
             ),
           ),
           const SizedBox(height: 8),
@@ -537,26 +620,27 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Posisi Anda:',
+                      'Usia Asli: ${widget.data.age} tahun',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey[600],
                       ),
                     ),
                     Text(
-                      '${widget.data.sameAgeComparison.toStringAsFixed(0)}th Percentile',
+                      'Body Age: ${widget.data.bodyAge} tahun',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.indigo[700],
+                        color: Colors.teal[700],
                       ),
                     ),
+                    const SizedBox(height: 4),
                     Text(
-                      widget.data.sameAgeCategory,
+                      widget.data.bodyAgeAssessment,
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: _getSameAgeCategoryColor(widget.data.sameAgeCategory),
+                        color: _getBodyAgeAssessmentColor(widget.data.bodyAgeAssessment),
                       ),
                     ),
                   ],
@@ -565,12 +649,12 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: _getSameAgeCategoryColor(widget.data.sameAgeCategory).withValues(alpha: 0.1),
+                  color: _getBodyAgeAssessmentColor(widget.data.bodyAgeAssessment).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
-                  _getSameAgeCategoryIcon(widget.data.sameAgeCategory),
-                  color: _getSameAgeCategoryColor(widget.data.sameAgeCategory),
+                  _getBodyAgeAssessmentIcon(widget.data.bodyAgeAssessment),
+                  color: _getBodyAgeAssessmentColor(widget.data.bodyAgeAssessment),
                   size: 32,
                 ),
               ),
@@ -578,7 +662,11 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
           ),
           const SizedBox(height: 8),
           Text(
-            _getSameAgeDescription(widget.data.sameAgeComparison),
+            OmronData.getBodyAgeAssessmentDescription(
+              widget.data.bodyAgeAssessment, 
+              widget.data.bodyAge, 
+              widget.data.age
+            ),
             style: TextStyle(
               fontSize: 12,
               color: Colors.grey[600],
@@ -589,7 +677,7 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
     );
   }
 
-  // ✅ PERBAIKAN - Segmental Subcutaneous Fat dengan struktur baru
+  // ✅ PERBAIKAN - Segmental Subcutaneous Fat dengan struktur baru dan null safety
   Widget _buildSegmentalSubcutaneousFat() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -607,28 +695,28 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
           children: [
             _buildSegmentalTile(
               'Whole Body (Seluruh Tubuh)',
-              '${widget.data.segmentalSubcutaneousFat['wholeBody']!.toStringAsFixed(1)}%',
+              '${(widget.data.segmentalSubcutaneousFat['wholeBody'] ?? 0.0).toStringAsFixed(1)}%',
               Icons.accessibility_new,
               Colors.purple,
             ),
             const SizedBox(height: 4),
             _buildSegmentalTile(
               'Trunk (Batang Tubuh)',
-              '${widget.data.segmentalSubcutaneousFat['trunk']!.toStringAsFixed(1)}%',
+              '${(widget.data.segmentalSubcutaneousFat['trunk'] ?? 0.0).toStringAsFixed(1)}%',
               Icons.airline_seat_recline_normal,
               Colors.purple,
             ),
             const SizedBox(height: 4),
             _buildSegmentalTile(
               'Arms (Kedua Lengan)',
-              '${widget.data.segmentalSubcutaneousFat['arms']!.toStringAsFixed(1)}%',
+              '${(widget.data.segmentalSubcutaneousFat['arms'] ?? 0.0).toStringAsFixed(1)}%',
               Icons.sports_martial_arts,
               Colors.purple,
             ),
             const SizedBox(height: 4),
             _buildSegmentalTile(
               'Legs (Kedua Kaki)',
-              '${widget.data.segmentalSubcutaneousFat['legs']!.toStringAsFixed(1)}%',
+              '${(widget.data.segmentalSubcutaneousFat['legs'] ?? 0.0).toStringAsFixed(1)}%',
               Icons.directions_walk,
               Colors.purple,
             ),
@@ -638,7 +726,7 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
     );
   }
 
-  // ✅ PERBAIKAN - Segmental Skeletal Muscle dengan struktur baru
+  // ✅ PERBAIKAN - Segmental Skeletal Muscle dengan struktur baru dan null safety
   Widget _buildSegmentalSkeletalMuscle() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -656,28 +744,28 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
           children: [
             _buildSegmentalTile(
               'Whole Body (Seluruh Tubuh)',
-              '${widget.data.segmentalSkeletalMuscle['wholeBody']!.toStringAsFixed(1)}%',
+              '${(widget.data.segmentalSkeletalMuscle['wholeBody'] ?? 0.0).toStringAsFixed(1)}%',
               Icons.accessibility_new,
               Colors.red,
             ),
             const SizedBox(height: 4),
             _buildSegmentalTile(
               'Trunk (Batang Tubuh)',
-              '${widget.data.segmentalSkeletalMuscle['trunk']!.toStringAsFixed(1)}%',
+              '${(widget.data.segmentalSkeletalMuscle['trunk'] ?? 0.0).toStringAsFixed(1)}%',
               Icons.airline_seat_recline_normal,
               Colors.red,
             ),
             const SizedBox(height: 4),
             _buildSegmentalTile(
               'Arms (Kedua Lengan)',
-              '${widget.data.segmentalSkeletalMuscle['arms']!.toStringAsFixed(1)}%',
+              '${(widget.data.segmentalSkeletalMuscle['arms'] ?? 0.0).toStringAsFixed(1)}%',
               Icons.sports_martial_arts,
               Colors.red,
             ),
             const SizedBox(height: 4),
             _buildSegmentalTile(
               'Legs (Kedua Kaki)',
-              '${widget.data.segmentalSkeletalMuscle['legs']!.toStringAsFixed(1)}%',
+              '${(widget.data.segmentalSkeletalMuscle['legs'] ?? 0.0).toStringAsFixed(1)}%',
               Icons.directions_walk,
               Colors.red,
             ),
@@ -950,7 +1038,7 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
     );
   }
 
-    Widget _buildSegmentalAnalysis() {
+  Widget _buildSegmentalAnalysis() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1212,6 +1300,7 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
     return recommendations;
   }
 
+  // UPDATED: Advanced Recommendations dengan Body Age Assessment
   List<Widget> _getAdvancedRecommendations() {
     List<Widget> recommendations = [];
     
@@ -1231,13 +1320,32 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
       ));
     }
     
-    // Segmental recommendations - ✅ PERBAIKAN menggunakan struktur baru
-    final maxSegFat = widget.data.segmentalSubcutaneousFat.values.reduce((a, b) => a > b ? a : b);
-    if (maxSegFat > 15) {
+    // TAMBAHKAN: Body Age Recommendations
+    if (widget.data.bodyAgeAssessment == 'Sedikit Tua' || 
+        widget.data.bodyAgeAssessment == 'Lebih Tua' || 
+        widget.data.bodyAgeAssessment == 'Sangat Tua') {
       recommendations.add(_buildRecommendationItem(
-        '🎯 Fokus latihan pada area dengan lemak tinggi',
+        '⏰ Fokus pada latihan untuk menurunkan usia tubuh',
         Colors.red,
       ));
+    } else if (widget.data.bodyAgeAssessment == 'Sangat Muda' || 
+               widget.data.bodyAgeAssessment == 'Lebih Muda') {
+      recommendations.add(_buildRecommendationItem(
+        '🏆 Pertahankan gaya hidup sehat untuk menjaga usia tubuh',
+        Colors.green,
+      ));
+    }
+    
+    // Segmental recommendations dengan null safety
+    final segmentalValues = widget.data.segmentalSubcutaneousFat.values.where((v) => v != null);
+    if (segmentalValues.isNotEmpty) {
+      final maxSegFat = segmentalValues.reduce((a, b) => a > b ? a : b);
+      if (maxSegFat > 15) {
+        recommendations.add(_buildRecommendationItem(
+          '🎯 Fokus latihan pada area dengan lemak tinggi',
+          Colors.red,
+        ));
+      }
     }
     
     recommendations.add(_buildRecommendationItem(
@@ -1361,25 +1469,67 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
     return 'Level lemak subkutan sangat tinggi';
   }
 
+  // FIXED: Same Age Category Color mapping
   Color _getSameAgeCategoryColor(String category) {
     switch (category) {
-      case 'Excellent': return Colors.green;
-      case 'Good': return Colors.blue;
-      case 'Average': return Colors.orange;
-      case 'Below Average': return Colors.red;
-      case 'Poor': return Colors.red[900]!;
-      default: return Colors.grey;
+      case 'Excellent': // DARI 'Sangat Baik' KE 'Excellent'
+        return Colors.green;
+      case 'Good': // DARI 'Baik' KE 'Good'
+        return Colors.blue;
+      case 'Average': // TETAP 'Average'
+        return Colors.orange;
+      case 'Below Average': // TETAP 'Below Average'
+        return Colors.red;
+      case 'Poor': // TETAP 'Poor'
+        return Colors.red[900]!;
+      default:
+        return Colors.grey;
     }
   }
 
+  // FIXED: Same Age Category Icon mapping
   IconData _getSameAgeCategoryIcon(String category) {
     switch (category) {
-      case 'Excellent': return Icons.star;
-      case 'Good': return Icons.thumb_up;
-      case 'Average': return Icons.remove;
-      case 'Below Average': return Icons.thumb_down;
-      case 'Poor': return Icons.warning;
-      default: return Icons.help;
+      case 'Excellent': // DARI 'Sangat Baik' KE 'Excellent'
+        return Icons.star;
+      case 'Good': // DARI 'Baik' KE 'Good'
+        return Icons.thumb_up;
+      case 'Average': // TETAP 'Average'
+        return Icons.remove;
+      case 'Below Average': // TETAP 'Below Average'
+        return Icons.thumb_down;
+      case 'Poor': // TETAP 'Poor'
+        return Icons.warning;
+      default:
+        return Icons.help;
+    }
+  }
+
+  // HELPER: Get body age assessment color (pindah dari model ke widget)
+  Color _getBodyAgeAssessmentColor(String assessment) {
+    switch (assessment) {
+      case 'Sangat Muda': return Colors.green[800]!;
+      case 'Lebih Muda': return Colors.green[700]!;
+      case 'Sedikit Muda': return Colors.green[500]!;
+      case 'Sesuai Usia': return Colors.blue[500]!;
+      case 'Sedikit Tua': return Colors.orange[500]!;
+      case 'Lebih Tua': return Colors.deepOrange[500]!;
+      case 'Sangat Tua': return Colors.red[700]!;
+      default: return Colors.grey[500]!;
+    }
+  }
+
+  // HELPER: Body Age Assessment Icon
+  IconData _getBodyAgeAssessmentIcon(String assessment) {
+    switch (assessment) {
+      case 'Sangat Muda':  return Icons.celebration;
+      case 'Lebih Muda':   return Icons.thumb_up;
+      case 'Sedikit Muda': return Icons.trending_up;
+      case 'Sesuai Usia':  return Icons.balance;
+      case 'Sedikit Tua':  return Icons.trending_down;
+      case 'Lebih Tua':    return Icons.warning;
+      case 'Sangat Tua':   return Icons.error;
+      default:             return Icons.help;
     }
   }
 
@@ -1391,11 +1541,11 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
     return 'Anda berada di 25% terbawah untuk usia Anda';
   }
 
-  // ✅ PERBAIKAN - Segmental analysis dengan struktur baru
+  // ✅ PERBAIKAN - Segmental analysis dengan struktur baru dan null safety
   String _getSegmentalAnalysis() {
-    final trunk = widget.data.segmentalSubcutaneousFat['trunk']!;
-    final arms = widget.data.segmentalSubcutaneousFat['arms']!;
-    final legs = widget.data.segmentalSubcutaneousFat['legs']!;
+    final trunk = widget.data.segmentalSubcutaneousFat['trunk'] ?? 0.0;
+    final arms = widget.data.segmentalSubcutaneousFat['arms'] ?? 0.0;
+    final legs = widget.data.segmentalSubcutaneousFat['legs'] ?? 0.0;
     
     String highestArea = 'trunk';
     double highestValue = trunk;
@@ -1542,7 +1692,7 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
   }
 }
 
-// ✅ PERBAIKAN - Custom Painter untuk Body Map dengan struktur baru
+// ✅ PERBAIKAN - Custom Painter untuk Body Map dengan struktur baru dan null safety
 class BodyMapPainter extends CustomPainter {
   final OmronData data;
 
@@ -1559,8 +1709,8 @@ class BodyMapPainter extends CustomPainter {
     paint.color = _getBodyPartColor(data.bodyFatPercentage);
     canvas.drawCircle(Offset(center.dx, center.dy - size.height * 0.3), size.width * 0.08, paint);
     
-    // Trunk
-    paint.color = _getBodyPartColor(data.segmentalSubcutaneousFat['trunk']!);
+    // Trunk - dengan null safety
+    paint.color = _getBodyPartColor(data.segmentalSubcutaneousFat['trunk'] ?? 0.0);
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         Rect.fromCenter(
@@ -1573,8 +1723,8 @@ class BodyMapPainter extends CustomPainter {
       paint,
     );
     
-    // Arms (gunakan nilai arms yang sudah digabung, bagi 2 untuk per lengan)
-    paint.color = _getBodyPartColor(data.segmentalSubcutaneousFat['arms']! / 2);
+    // Arms (gunakan nilai arms yang sudah digabung, bagi 2 untuk per lengan) - dengan null safety
+    paint.color = _getBodyPartColor((data.segmentalSubcutaneousFat['arms'] ?? 0.0) / 2);
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         Rect.fromCenter(
@@ -1599,8 +1749,8 @@ class BodyMapPainter extends CustomPainter {
       paint,
     );
     
-    // Legs (gunakan nilai legs yang sudah digabung, bagi 2 untuk per kaki)
-    paint.color = _getBodyPartColor(data.segmentalSubcutaneousFat['legs']! / 2);
+    // Legs (gunakan nilai legs yang sudah digabung, bagi 2 untuk per kaki) - dengan null safety
+    paint.color = _getBodyPartColor((data.segmentalSubcutaneousFat['legs'] ?? 0.0) / 2);
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         Rect.fromCenter(
@@ -1653,4 +1803,3 @@ class BodyMapPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
- 
