@@ -220,7 +220,7 @@ class PDFService {
             
             pw.SizedBox(height: 20),
             
-            // Advanced Measurements
+            // Advanced Measurements - UPDATED dengan Body Age Assessment
             pw.Table(
               border: pw.TableBorder.all(color: PdfColors.grey400),
               children: [
@@ -232,17 +232,17 @@ class PDFService {
                   _getSubcutaneousFatDescription(data.subcutaneousFatPercentage),
                 ),
                 _buildMeasurementRow(
-                  'Same Age Comparison', 
-                  '${data.sameAgeComparison.toStringAsFixed(0)}th percentile', 
-                  data.sameAgeCategory,
-                  _getSameAgeDescription(data.sameAgeComparison),
+                  'Body Age Assessment', 
+                  '${data.bodyAge} tahun (${data.bodyAgeAssessment})', 
+                  data.bodyAgeAssessment,
+                  _getBodyAgeAssessmentDescription(data.bodyAgeAssessment, data.bodyAge, data.age),
                 ),
               ],
             ),
             
             pw.SizedBox(height: 30),
             
-            // Same Age Comparison Details
+            // Body Age Assessment Details - GANTI dari Same Age Comparison
             pw.Container(
               width: double.infinity,
               padding: const pw.EdgeInsets.all(15),
@@ -255,7 +255,7 @@ class PDFService {
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
                   pw.Text(
-                    'PERBANDINGAN USIA SEBAYA',
+                    'PENILAIAN USIA TUBUH',
                     style: pw.TextStyle(
                       fontSize: 14,
                       fontWeight: pw.FontWeight.bold,
@@ -264,12 +264,17 @@ class PDFService {
                   ),
                   pw.SizedBox(height: 10),
                   pw.Text(
-                    'Posisi Anda: ${data.sameAgeComparison.toStringAsFixed(0)}th Percentile (${data.sameAgeCategory})',
+                    'Usia Asli: ${data.age} tahun | Body Age: ${data.bodyAge} tahun',
                     style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
                   ),
                   pw.SizedBox(height: 5),
                   pw.Text(
-                    _getSameAgeDescription(data.sameAgeComparison),
+                    'Status: ${data.bodyAgeAssessment}',
+                    style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+                  ),
+                  pw.SizedBox(height: 5),
+                  pw.Text(
+                    _getBodyAgeAssessmentDescription(data.bodyAgeAssessment, data.bodyAge, data.age),
                     style: const pw.TextStyle(fontSize: 12),
                   ),
                 ],
@@ -647,9 +652,9 @@ class PDFService {
   // Helper functions for categorization
   static PdfColor _getAssessmentColor(String assessment) {
     switch (assessment) {
-      case 'Sangat Baik': return PdfColors.green;
-      case 'Baik': return PdfColors.blue;
-      case 'Cukup': return PdfColors.orange;
+      case 'Excellent': return PdfColors.green;
+      case 'Good': return PdfColors.blue;
+      case 'Fair': return PdfColors.orange;
       default: return PdfColors.red;
     }
   }
@@ -708,12 +713,28 @@ class PDFService {
     return 'Level sangat tinggi';
   }
 
-  static String _getSameAgeDescription(double percentile) {
-    if (percentile >= 90) return 'Anda berada di 10% teratas untuk usia Anda';
-    if (percentile >= 75) return 'Anda berada di 25% teratas untuk usia Anda';
-    if (percentile >= 50) return 'Anda berada di rata-rata untuk usia Anda';
-    if (percentile >= 25) return 'Anda berada di bawah rata-rata untuk usia Anda';
-    return 'Anda berada di 25% terbawah untuk usia Anda';
+  // TAMBAHKAN: Body Age Assessment Description untuk PDF
+  static String _getBodyAgeAssessmentDescription(String assessment, int bodyAge, int actualAge) {
+    final diff = bodyAge - actualAge;
+    
+    switch (assessment) {
+      case 'Sangat Muda':
+        return 'Kondisi tubuh Anda sangat baik, ${diff.abs()} tahun lebih muda dari usia asli. Pertahankan gaya hidup sehat!';
+      case 'Lebih Muda':
+        return 'Kondisi tubuh Anda baik, ${diff.abs()} tahun lebih muda dari usia asli. Terus jaga pola hidup sehat.';
+      case 'Sedikit Muda':
+        return 'Kondisi tubuh Anda cukup baik, ${diff.abs()} tahun lebih muda dari usia asli.';
+      case 'Sesuai Usia':
+        return 'Kondisi tubuh Anda sesuai dengan usia kronologis. Pertahankan aktivitas fisik rutin.';
+      case 'Sedikit Tua':
+        return 'Kondisi tubuh Anda $diff tahun lebih tua dari usia asli. Tingkatkan aktivitas fisik dan perbaiki pola makan.';
+      case 'Lebih Tua':
+        return 'Kondisi tubuh Anda $diff tahun lebih tua dari usia asli. Konsultasi dengan ahli untuk program perbaikan.';
+      case 'Sangat Tua':
+        return 'Kondisi tubuh Anda $diff tahun lebih tua dari usia asli. Diperlukan perhatian khusus dan konsultasi medis.';
+      default:
+        return 'Penilaian usia tubuh menunjukkan kondisi yang perlu diperhatikan.';
+    }
   }
 
   static String _getBodyAgeStatus(int bodyAge, int actualAge) {
@@ -731,7 +752,7 @@ class PDFService {
     return 'Sangat Tinggi';
   }
 
-  // FIXED Summary generators dengan struktur baru
+  // UPDATED Summary generators dengan Body Age Assessment
   static String _generateBasicSummary(OmronData data) {
     return 'Berdasarkan 7 indikator dasar Omron HBF-375, kondisi keseluruhan Anda dinilai ${data.overallAssessment}. '
            'BMI Anda ${data.bmi.toStringAsFixed(1)} termasuk kategori ${data.bmiCategory}, dengan persentase lemak tubuh ${data.bodyFatPercentage.toStringAsFixed(1)}% (${data.bodyFatCategory}). '
@@ -740,7 +761,7 @@ class PDFService {
 
   static String _generateAdvancedSummary(OmronData data) {
     return 'Analisis lanjutan menunjukkan lemak subkutan ${data.subcutaneousFatPercentage.toStringAsFixed(1)}% (${_getSubcutaneousFatCategory(data.subcutaneousFatPercentage)}). '
-           'Dibandingkan dengan orang seusia Anda, Anda berada di posisi ${data.sameAgeComparison.toStringAsFixed(0)} persentil (${data.sameAgeCategory}).';
+           'Penilaian usia tubuh menunjukkan body age ${data.bodyAge} tahun dibandingkan usia asli ${data.age} tahun, dengan status ${data.bodyAgeAssessment}.';
   }
 
   // FIXED Segmental analysis dengan struktur baru
@@ -798,8 +819,14 @@ class PDFService {
       recommendations.add('Kurangi lemak subkutan dengan kombinasi yoga, cardio, dan resistance training');
     }
     
-    if (data.sameAgeComparison < 50) {
-      recommendations.add('Tingkatkan program fitness untuk menyamai atau melampaui teman sebaya');
+    // GANTI Same Age dengan Body Age recommendations
+    if (data.bodyAgeAssessment == 'Sedikit Tua' || 
+        data.bodyAgeAssessment == 'Lebih Tua' || 
+        data.bodyAgeAssessment == 'Sangat Tua') {
+      recommendations.add('Fokus pada program anti-aging dengan latihan rutin dan nutrisi seimbang');
+    } else if (data.bodyAgeAssessment == 'Sangat Muda' || 
+               data.bodyAgeAssessment == 'Lebih Muda') {
+      recommendations.add('Pertahankan gaya hidup sehat untuk menjaga usia tubuh yang optimal');
     }
     
     // FIXED: Cari nilai maksimum segmental fat dengan null safety
