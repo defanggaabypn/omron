@@ -830,7 +830,7 @@ class PDFService {
     }
     
     // FIXED: Cari nilai maksimum segmental fat dengan null safety
-    final segmentalValues = data.segmentalSubcutaneousFat.values.where((v) => v != null);
+    final segmentalValues = data.segmentalSubcutaneousFat.values;
     if (segmentalValues.isNotEmpty) {
       final maxSegFat = segmentalValues.reduce((a, b) => a > b ? a : b);
       if (maxSegFat > 15) {

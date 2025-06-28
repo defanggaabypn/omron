@@ -1337,7 +1337,7 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
     }
     
     // Segmental recommendations dengan null safety
-    final segmentalValues = widget.data.segmentalSubcutaneousFat.values.where((v) => v != null);
+    final segmentalValues = widget.data.segmentalSubcutaneousFat.values;
     if (segmentalValues.isNotEmpty) {
       final maxSegFat = segmentalValues.reduce((a, b) => a > b ? a : b);
       if (maxSegFat > 15) {
@@ -1488,22 +1488,22 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
   }
 
   // FIXED: Same Age Category Icon mapping
-  IconData _getSameAgeCategoryIcon(String category) {
-    switch (category) {
-      case 'Excellent': // DARI 'Sangat Baik' KE 'Excellent'
-        return Icons.star;
-      case 'Good': // DARI 'Baik' KE 'Good'
-        return Icons.thumb_up;
-      case 'Average': // TETAP 'Average'
-        return Icons.remove;
-      case 'Below Average': // TETAP 'Below Average'
-        return Icons.thumb_down;
-      case 'Poor': // TETAP 'Poor'
-        return Icons.warning;
-      default:
-        return Icons.help;
-    }
-  }
+  // IconData _getSameAgeCategoryIcon(String category) {
+  //   switch (category) {
+  //     case 'Excellent': // DARI 'Sangat Baik' KE 'Excellent'
+  //       return Icons.star;
+  //     case 'Good': // DARI 'Baik' KE 'Good'
+  //       return Icons.thumb_up;
+  //     case 'Average': // TETAP 'Average'
+  //       return Icons.remove;
+  //     case 'Below Average': // TETAP 'Below Average'
+  //       return Icons.thumb_down;
+  //     case 'Poor': // TETAP 'Poor'
+  //       return Icons.warning;
+  //     default:
+  //       return Icons.help;
+  //   }
+  // }
 
   // HELPER: Get body age assessment color (pindah dari model ke widget)
   Color _getBodyAgeAssessmentColor(String assessment) {

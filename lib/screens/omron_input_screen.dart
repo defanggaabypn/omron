@@ -48,7 +48,6 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
   bool _isLoading = false;
   bool _autoCalculateBMI = true;
   bool _autoCalculateSegmental = false; // CHANGED: Set to false so all fields can be manually input
-  final bool _autoCalculateSameAge = true;
   OmronData? _calculatedResult;
 
   @override

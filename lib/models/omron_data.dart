@@ -105,10 +105,10 @@ class OmronData {
     if (visceralFat <= 9.0) score += 2;
     else if (visceralFat <= 14.0) score += 1;
     
-    if (score >= 5) return 'Sangat Baik';
-    if (score >= 3) return 'Baik';
-    if (score >= 1) return 'Cukup';
-    return 'Perlu Diperbaiki';
+    if (score >= 5) return 'Excellent';
+    if (score >= 3) return 'Good';
+    if (score >= 1) return 'Fair';
+    return 'Need Improvement';
   }
 
   // BARU: Penilaian usia tubuh vs usia asli

@@ -453,23 +453,24 @@ class OmronHistoryCard extends StatelessWidget {
     return Colors.red;
   }
 
-  Color _getAssessmentColor(String assessment) {
-    switch (assessment) {
-      case 'Sangat Baik': return Colors.green;
-      case 'Baik': return Colors.blue;
-      case 'Cukup': return Colors.orange;
-      default: return Colors.red;
-    }
+Color _getAssessmentColor(String assessment) {
+  switch (assessment) {
+    case 'Excellent': return Colors.green;
+    case 'Good': return Colors.blue;
+    case 'Fair': return Colors.orange;
+    default: return Colors.red; // Poor or Unknown
   }
+}
 
-  IconData _getAssessmentIcon(String assessment) {
-    switch (assessment) {
-      case 'Sangat Baik': return Icons.star;
-      case 'Baik': return Icons.thumb_up;
-      case 'Cukup': return Icons.warning;
-      default: return Icons.priority_high;
-    }
+IconData _getAssessmentIcon(String assessment) {
+  switch (assessment) {
+    case 'Excellent': return Icons.star;
+    case 'Good': return Icons.thumb_up;
+    case 'Fair': return Icons.warning;
+    default: return Icons.priority_high; // Poor or Unknown
   }
+}
+
 
   void _handleMenuAction(BuildContext context, String action) {
     switch (action) {
