@@ -22,7 +22,7 @@ class DatabaseService {
     String path = join(await getDatabasesPath(), 'omron_hbf375.db');
     return await openDatabase(
       path,
-      version: 5, // NAIK VERSION UNTUK FIELD WHATSAPP STATUS
+      version: 6, // NAIK VERSION UNTUK SEGMENTAL STRUCTURE BARU
       onCreate: _createDatabase,
       onUpgrade: _upgradeDatabase,
     );
@@ -46,8 +46,8 @@ class DatabaseService {
         restingMetabolism INTEGER NOT NULL,
         bodyAge INTEGER NOT NULL,
         subcutaneousFatPercentage REAL NOT NULL DEFAULT 0.0,
-        segmentalSubcutaneousFat TEXT NOT NULL DEFAULT '{"trunk": 0.0, "rightArm": 0.0, "leftArm": 0.0, "rightLeg": 0.0, "leftLeg": 0.0}',
-        segmentalSkeletalMuscle TEXT NOT NULL DEFAULT '{"trunk": 0.0, "rightArm": 0.0, "leftArm": 0.0, "rightLeg": 0.0, "leftLeg": 0.0}',
+        segmentalSubcutaneousFat TEXT NOT NULL DEFAULT '{"wholeBody": 0.0, "trunk": 0.0, "arms": 0.0, "legs": 0.0}',
+        segmentalSkeletalMuscle TEXT NOT NULL DEFAULT '{"wholeBody": 0.0, "trunk": 0.0, "arms": 0.0, "legs": 0.0}',
         sameAgeComparison REAL NOT NULL DEFAULT 50.0,
         isWhatsAppSent INTEGER NOT NULL DEFAULT 0,
         whatsappSentAt INTEGER
@@ -59,14 +59,14 @@ class DatabaseService {
     await db.execute('CREATE INDEX idx_timestamp ON omron_data(timestamp)');
     await db.execute('CREATE INDEX idx_patient_timestamp ON omron_data(patientName, timestamp)');
     await db.execute('CREATE INDEX idx_whatsapp ON omron_data(whatsappNumber)');
-    await db.execute('CREATE INDEX idx_whatsapp_sent ON omron_data(isWhatsAppSent)'); // INDEX BARU
+    await db.execute('CREATE INDEX idx_whatsapp_sent ON omron_data(isWhatsAppSent)');
   }
 
   Future<void> _upgradeDatabase(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
       await db.execute('ALTER TABLE omron_data ADD COLUMN subcutaneousFatPercentage REAL NOT NULL DEFAULT 0.0');
-      await db.execute('ALTER TABLE omron_data ADD COLUMN segmentalSubcutaneousFat TEXT NOT NULL DEFAULT \'{"trunk": 0.0, "rightArm": 0.0, "leftArm": 0.0, "rightLeg": 0.0, "leftLeg": 0.0}\'');
-      await db.execute('ALTER TABLE omron_data ADD COLUMN segmentalSkeletalMuscle TEXT NOT NULL DEFAULT \'{"trunk": 0.0, "rightArm": 0.0, "leftArm": 0.0, "rightLeg": 0.0, "leftLeg": 0.0}\'');
+      await db.execute('ALTER TABLE omron_data ADD COLUMN segmentalSubcutaneousFat TEXT NOT NULL DEFAULT \'{"wholeBody": 0.0, "trunk": 0.0, "arms": 0.0, "legs": 0.0}\'');
+      await db.execute('ALTER TABLE omron_data ADD COLUMN segmentalSkeletalMuscle TEXT NOT NULL DEFAULT \'{"wholeBody": 0.0, "trunk": 0.0, "arms": 0.0, "legs": 0.0}\'');
       await db.execute('ALTER TABLE omron_data ADD COLUMN sameAgeComparison REAL NOT NULL DEFAULT 50.0');
     }
     
@@ -94,8 +94,8 @@ class DatabaseService {
           restingMetabolism INTEGER NOT NULL,
           bodyAge INTEGER NOT NULL,
           subcutaneousFatPercentage REAL NOT NULL DEFAULT 0.0,
-          segmentalSubcutaneousFat TEXT NOT NULL DEFAULT '{"trunk": 0.0, "rightArm": 0.0, "leftArm": 0.0, "rightLeg": 0.0, "leftLeg": 0.0}',
-          segmentalSkeletalMuscle TEXT NOT NULL DEFAULT '{"trunk": 0.0, "rightArm": 0.0, "leftArm": 0.0, "rightLeg": 0.0, "leftLeg": 0.0}',
+          segmentalSubcutaneousFat TEXT NOT NULL DEFAULT '{"wholeBody": 0.0, "trunk": 0.0, "arms": 0.0, "legs": 0.0}',
+          segmentalSkeletalMuscle TEXT NOT NULL DEFAULT '{"wholeBody": 0.0, "trunk": 0.0, "arms": 0.0, "legs": 0.0}',
           sameAgeComparison REAL NOT NULL DEFAULT 50.0
         )
       ''');
@@ -114,11 +114,35 @@ class DatabaseService {
       await db.execute('ALTER TABLE omron_data_new RENAME TO omron_data');
     }
     
-    // UPGRADE BARU: Tambah field WhatsApp status
     if (oldVersion < 5) {
       await db.execute('ALTER TABLE omron_data ADD COLUMN isWhatsAppSent INTEGER NOT NULL DEFAULT 0');
       await db.execute('ALTER TABLE omron_data ADD COLUMN whatsappSentAt INTEGER');
       await db.execute('CREATE INDEX IF NOT EXISTS idx_whatsapp_sent ON omron_data(isWhatsAppSent)');
+    }
+    
+    // NEW UPGRADE: Convert segmental data structure dari rightArm/leftArm ke arms, rightLeg/leftLeg ke legs
+    if (oldVersion < 6) {
+      final existingData = await db.query('omron_data');
+      
+      for (final row in existingData) {
+        final id = row['id'];
+        final oldSubFat = row['segmentalSubcutaneousFat'] as String;
+        final oldMuscle = row['segmentalSkeletalMuscle'] as String;
+        
+        // Convert old format to new format
+        final newSubFat = _convertSegmentalFormat(oldSubFat);
+        final newMuscle = _convertSegmentalFormat(oldMuscle);
+        
+        await db.update(
+          'omron_data',
+          {
+            'segmentalSubcutaneousFat': newSubFat,
+            'segmentalSkeletalMuscle': newMuscle,
+          },
+          where: 'id = ?',
+          whereArgs: [id],
+        );
+      }
     }
     
     // Create indexes if they don't exist
@@ -127,6 +151,39 @@ class DatabaseService {
     await db.execute('CREATE INDEX IF NOT EXISTS idx_patient_timestamp ON omron_data(patientName, timestamp)');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_whatsapp ON omron_data(whatsappNumber)');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_whatsapp_sent ON omron_data(isWhatsAppSent)');
+  }
+
+  // HELPER METHOD: Convert old segmental format to new format
+  String _convertSegmentalFormat(String oldFormat) {
+    try {
+      // Parse old format: {"trunk": x, "rightArm": y, "leftArm": z, "rightLeg": a, "leftLeg": b}
+      final cleanJson = oldFormat.replaceAll(RegExp(r'[{}"]'), '');
+      final pairs = cleanJson.split(', ');
+      Map<String, double> oldData = {};
+      
+      for (String pair in pairs) {
+        final keyValue = pair.split(': ');
+        if (keyValue.length == 2) {
+          oldData[keyValue[0]] = double.tryParse(keyValue[1]) ?? 0.0;
+        }
+      }
+      
+      // Convert to new format: {"wholeBody": total, "trunk": x, "arms": y+z, "legs": a+b}
+      final double trunk = oldData['trunk'] ?? 0.0;
+      final double rightArm = oldData['rightArm'] ?? 0.0;
+      final double leftArm = oldData['leftArm'] ?? 0.0;
+      final double rightLeg = oldData['rightLeg'] ?? 0.0;
+      final double leftLeg = oldData['leftLeg'] ?? 0.0;
+      
+      final double arms = rightArm + leftArm;
+      final double legs = rightLeg + leftLeg;
+      final double wholeBody = trunk + arms + legs;
+      
+      return '{"wholeBody": $wholeBody, "trunk": $trunk, "arms": $arms, "legs": $legs}';
+    } catch (e) {
+      // Return default if conversion fails
+      return '{"wholeBody": 0.0, "trunk": 0.0, "arms": 0.0, "legs": 0.0}';
+    }
   }
 
   // Insert new Omron data
@@ -178,7 +235,7 @@ class DatabaseService {
     });
   }
 
-  // METHOD BARU: Update status WhatsApp pengiriman
+  // Update status WhatsApp pengiriman
   Future<int> updateWhatsAppSentStatus(int id, {required bool isSent}) async {
     final db = await database;
     return await db.update(
@@ -192,7 +249,7 @@ class DatabaseService {
     );
   }
 
-  // METHOD BARU: Batch update status WhatsApp untuk multiple records
+  // Batch update status WhatsApp untuk multiple records
   Future<void> batchUpdateWhatsAppStatus(List<int> ids, {required bool isSent}) async {
     final db = await database;
     final batch = db.batch();
@@ -212,7 +269,7 @@ class DatabaseService {
     await batch.commit();
   }
 
-  // METHOD BARU: Get data yang belum dikirim WhatsApp
+  // Get data yang belum dikirim WhatsApp
   Future<List<OmronData>> getUnsentWhatsAppData({int limit = 50}) async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
@@ -227,7 +284,7 @@ class DatabaseService {
     });
   }
 
-  // METHOD BARU: Get data yang sudah dikirim WhatsApp
+  // Get data yang sudah dikirim WhatsApp
   Future<List<OmronData>> getSentWhatsAppData({int limit = 50}) async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
@@ -242,7 +299,7 @@ class DatabaseService {
     });
   }
 
-  // METHOD BARU: Get statistik WhatsApp
+  // Get statistik WhatsApp
   Future<Map<String, dynamic>> getWhatsAppStatistics() async {
     final db = await database;
     
@@ -293,7 +350,7 @@ class DatabaseService {
     int limit = 20,
     int offset = 0,
     String? patientName,
-    bool? whatsappSentStatus, // PARAMETER BARU
+    bool? whatsappSentStatus,
   }) async {
     final db = await database;
     
@@ -305,7 +362,6 @@ class DatabaseService {
       whereArgs.add(patientName);
     }
     
-    // FILTER BARU: berdasarkan status WhatsApp
     if (whatsappSentStatus != null) {
       conditions.add('isWhatsAppSent = ?');
       whereArgs.add(whatsappSentStatus ? 1 : 0);
@@ -330,7 +386,7 @@ class DatabaseService {
     required DateTime startDate,
     required DateTime endDate,
     String? patientName,
-    bool? whatsappSentStatus, // PARAMETER BARU
+    bool? whatsappSentStatus,
   }) async {
     final db = await database;
     
@@ -345,7 +401,6 @@ class DatabaseService {
       whereArgs.add(patientName);
     }
     
-    // FILTER BARU: berdasarkan status WhatsApp
     if (whatsappSentStatus != null) {
       conditions.add('isWhatsAppSent = ?');
       whereArgs.add(whatsappSentStatus ? 1 : 0);
@@ -467,12 +522,12 @@ class DatabaseService {
       'whatsappNumber': map['whatsappNumber'] as String,
       'recordCount': map['recordCount'] as int,
       'lastRecord': DateTime.fromMillisecondsSinceEpoch(map['lastRecord'] as int),
-      'sentCount': map['sentCount'] as int, // FIELD BARU
-      'pendingCount': map['pendingCount'] as int, // FIELD BARU
+      'sentCount': map['sentCount'] as int,
+      'pendingCount': map['pendingCount'] as int,
     }).toList();
   }
 
-  // Get patient statistics - UPDATED dengan WhatsApp stats
+  // Get patient statistics
   Future<Map<String, dynamic>> getPatientStatistics(String patientName) async {
     final db = await database;
     
@@ -518,8 +573,8 @@ class DatabaseService {
         'avgSubcutaneousFat': (result['avg_subcutaneous_fat'] as double?)?.toDouble() ?? 0.0,
         'avgSameAgeComparison': (result['avg_same_age_comparison'] as double?)?.toDouble() ?? 50.0,
         'whatsappNumber': result['whatsappNumber'] as String?,
-        'sentWhatsApp': result['sent_whatsapp'] as int, // FIELD BARU
-        'pendingWhatsApp': result['pending_whatsapp'] as int, // FIELD BARU
+        'sentWhatsApp': result['sent_whatsapp'] as int,
+        'pendingWhatsApp': result['pending_whatsapp'] as int,
       };
     }
     
@@ -542,7 +597,7 @@ class DatabaseService {
     };
   }
 
-  // Get overall statistics - UPDATED dengan WhatsApp stats
+  // Get overall statistics
   Future<Map<String, dynamic>> getOverallStatistics() async {
     final db = await database;
     
@@ -584,8 +639,8 @@ class DatabaseService {
         'avgVisceralFat': (stats['avg_visceral_fat'] as double?)?.toDouble() ?? 0.0,
         'avgSubcutaneousFat': (stats['avg_subcutaneous_fat'] as double?)?.toDouble() ?? 0.0,
         'avgSameAgeComparison': (stats['avg_same_age_comparison'] as double?)?.toDouble() ?? 50.0,
-        'sentWhatsApp': stats['sent_whatsapp'] as int, // FIELD BARU
-        'pendingWhatsApp': stats['pending_whatsapp'] as int, // FIELD BARU
+        'sentWhatsApp': stats['sent_whatsapp'] as int,
+        'pendingWhatsApp': stats['pending_whatsapp'] as int,
       };
     }
     
@@ -607,7 +662,7 @@ class DatabaseService {
     };
   }
 
-  // Search functionality - UPDATED dengan filter WhatsApp status
+  // Search functionality
   Future<List<OmronData>> searchOmronData({
     String? patientName,
     String? whatsappNumber,
@@ -624,7 +679,7 @@ class DatabaseService {
     String? gender,
     DateTime? startDate,
     DateTime? endDate,
-    bool? whatsappSentStatus, // PARAMETER BARU
+    bool? whatsappSentStatus,
   }) async {
     final db = await database;
     
@@ -706,7 +761,6 @@ class DatabaseService {
       args.add(endDate.millisecondsSinceEpoch);
     }
     
-    // FILTER BARU: berdasarkan status WhatsApp
     if (whatsappSentStatus != null) {
       conditions.add('isWhatsAppSent = ?');
       args.add(whatsappSentStatus ? 1 : 0);
@@ -725,7 +779,7 @@ class DatabaseService {
     });
   }
 
-  // Export data as CSV string - UPDATED dengan WhatsApp status
+  // Export data as CSV string
   Future<String> exportDataAsCSV({String? patientName}) async {
     List<OmronData> data;
     
@@ -737,12 +791,11 @@ class DatabaseService {
     
     StringBuffer csv = StringBuffer();
     
-    // CSV Header - TAMBAH WHATSAPP STATUS COLUMNS
+    // CSV Header - UPDATED dengan struktur segmental baru
     csv.writeln('ID,Timestamp,Patient Name,WhatsApp Number,Age,Gender,Height,Weight,Body Fat %,BMI,'
         'Skeletal Muscle %,Visceral Fat Level,Resting Metabolism,Body Age,'
-        'Subcutaneous Fat %,Trunk Sub Fat,Right Arm Sub Fat,Left Arm Sub Fat,'
-        'Right Leg Sub Fat,Left Leg Sub Fat,Trunk Muscle,Right Arm Muscle,'
-        'Left Arm Muscle,Right Leg Muscle,Left Leg Muscle,Same Age Comparison,'
+        'Subcutaneous Fat %,Whole Body Sub Fat,Trunk Sub Fat,Arms Sub Fat,Legs Sub Fat,'
+        'Whole Body Muscle,Trunk Muscle,Arms Muscle,Legs Muscle,Same Age Comparison,'
         'BMI Category,Body Fat Category,Overall Assessment,Same Age Category,'
         'WhatsApp Sent,WhatsApp Sent At');
     
@@ -754,16 +807,14 @@ class DatabaseService {
           '${item.weight},${item.bodyFatPercentage},${item.bmi},'
           '${item.skeletalMusclePercentage},${item.visceralFatLevel},'
           '${item.restingMetabolism},${item.bodyAge},${item.subcutaneousFatPercentage},'
+          '${item.segmentalSubcutaneousFat['wholeBody']},'
           '${item.segmentalSubcutaneousFat['trunk']},'
-          '${item.segmentalSubcutaneousFat['rightArm']},'
-          '${item.segmentalSubcutaneousFat['leftArm']},'
-          '${item.segmentalSubcutaneousFat['rightLeg']},'
-          '${item.segmentalSubcutaneousFat['leftLeg']},'
+          '${item.segmentalSubcutaneousFat['arms']},'
+          '${item.segmentalSubcutaneousFat['legs']},'
+          '${item.segmentalSkeletalMuscle['wholeBody']},'
           '${item.segmentalSkeletalMuscle['trunk']},'
-          '${item.segmentalSkeletalMuscle['rightArm']},'
-          '${item.segmentalSkeletalMuscle['leftArm']},'
-          '${item.segmentalSkeletalMuscle['rightLeg']},'
-          '${item.segmentalSkeletalMuscle['leftLeg']},'
+          '${item.segmentalSkeletalMuscle['arms']},'
+          '${item.segmentalSkeletalMuscle['legs']},'
           '${item.sameAgeComparison},"${item.bmiCategory}",'
           '"${item.bodyFatCategory}","${item.overallAssessment}",'
           '"${item.sameAgeCategory}","${item.isWhatsAppSent ? 'Yes' : 'No'}",'
@@ -773,7 +824,6 @@ class DatabaseService {
     return csv.toString();
   }
 
-  // [Method lainnya tetap sama: backupDatabase, restoreDatabase, clearAllData, getDatabaseInfo, closeDatabase]
   Future<List<Map<String, dynamic>>> backupDatabase() async {
     final db = await database;
     return await db.query('omron_data', orderBy: 'timestamp ASC');

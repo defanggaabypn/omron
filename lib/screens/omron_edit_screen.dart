@@ -8,7 +8,7 @@ import '../widgets/patient_info_card.dart';
 
 class OmronEditScreen extends StatefulWidget {
   final OmronData data;
-
+  
   const OmronEditScreen({Key? key, required this.data}) : super(key: key);
 
   @override
@@ -21,43 +21,39 @@ class _OmronEditScreenState extends State<OmronEditScreen> {
   final DatabaseService _databaseService = DatabaseService();
   
   // Patient Info Controllers
-  late final TextEditingController _patientNameController;
-  late final TextEditingController _whatsappController;
-  late final TextEditingController _ageController;
-  late final TextEditingController _heightController;
+  late TextEditingController _patientNameController;
+  late TextEditingController _whatsappController;
+  late TextEditingController _ageController;
+  late TextEditingController _heightController;
   
   // Basic Omron Data Controllers
-  late final TextEditingController _weightController;
-  late final TextEditingController _bodyFatController;
-  late final TextEditingController _bmiController;
-  late final TextEditingController _skeletalMuscleController;
-  late final TextEditingController _visceralFatController;
-  late final TextEditingController _restingMetabolismController;
-  late final TextEditingController _bodyAgeController;
+  late TextEditingController _weightController;
+  late TextEditingController _bodyFatController;
+  late TextEditingController _bmiController;
+  late TextEditingController _skeletalMuscleController;
+  late TextEditingController _visceralFatController;
+  late TextEditingController _restingMetabolismController;
+  late TextEditingController _bodyAgeController;
   
   // Additional Controllers
-  late final TextEditingController _subcutaneousFatController;
+  late TextEditingController _subcutaneousFatController;
   
-  // Segmental Controllers - Subcutaneous Fat
-  late final TextEditingController _segSubTrunkController;
-  late final TextEditingController _segSubRightArmController;
-  late final TextEditingController _segSubLeftArmController;
-  late final TextEditingController _segSubRightLegController;
-  late final TextEditingController _segSubLeftLegController;
+  // UPDATED: Segmental Controllers - NEW STRUCTURE (wholeBody, trunk, arms, legs)
+  late TextEditingController _segSubWholeBodyController;
+  late TextEditingController _segSubTrunkController;
+  late TextEditingController _segSubArmsController;
+  late TextEditingController _segSubLegsController;
   
-  // Segmental Controllers - Skeletal Muscle
-  late final TextEditingController _segMusTrunkController;
-  late final TextEditingController _segMusRightArmController;
-  late final TextEditingController _segMusLeftArmController;
-  late final TextEditingController _segMusRightLegController;
-  late final TextEditingController _segMusLeftLegController;
+  late TextEditingController _segMusWholeBodyController;
+  late TextEditingController _segMusTrunkController;
+  late TextEditingController _segMusArmsController;
+  late TextEditingController _segMusLegsController;
 
   late String _selectedGender;
   bool _isLoading = false;
-  bool _isUpdated = false; // Track if any changes made
-  bool _autoCalculateBMI = false; // Disabled by default in edit mode
-  bool _autoCalculateSegmental = false; // Disabled by default in edit mode
-  OmronData? _previewResult;
+  bool _autoCalculateBMI = false;
+  bool _autoCalculateSegmental = false;
+  OmronData? _updatedResult;
 
   @override
   void initState() {
@@ -67,12 +63,13 @@ class _OmronEditScreenState extends State<OmronEditScreen> {
   }
 
   void _initializeControllers() {
-    // Initialize controllers with existing data
+    // Patient Info
     _patientNameController = TextEditingController(text: widget.data.patientName);
     _whatsappController = TextEditingController(text: widget.data.whatsappNumber ?? '');
     _ageController = TextEditingController(text: widget.data.age.toString());
     _heightController = TextEditingController(text: widget.data.height.toString());
     
+    // Basic Omron Data
     _weightController = TextEditingController(text: widget.data.weight.toString());
     _bodyFatController = TextEditingController(text: widget.data.bodyFatPercentage.toString());
     _bmiController = TextEditingController(text: widget.data.bmi.toString());
@@ -81,58 +78,35 @@ class _OmronEditScreenState extends State<OmronEditScreen> {
     _restingMetabolismController = TextEditingController(text: widget.data.restingMetabolism.toString());
     _bodyAgeController = TextEditingController(text: widget.data.bodyAge.toString());
     
+    // Additional Data
     _subcutaneousFatController = TextEditingController(text: widget.data.subcutaneousFatPercentage.toString());
     
-    // Segmental Subcutaneous Fat
-    _segSubTrunkController = TextEditingController(text: widget.data.segmentalSubcutaneousFat['trunk']!.toString());
-    _segSubRightArmController = TextEditingController(text: widget.data.segmentalSubcutaneousFat['rightArm']!.toString());
-    _segSubLeftArmController = TextEditingController(text: widget.data.segmentalSubcutaneousFat['leftArm']!.toString());
-    _segSubRightLegController = TextEditingController(text: widget.data.segmentalSubcutaneousFat['rightLeg']!.toString());
-    _segSubLeftLegController = TextEditingController(text: widget.data.segmentalSubcutaneousFat['leftLeg']!.toString());
+    // UPDATED: Segmental Controllers - NEW STRUCTURE
+        _segSubWholeBodyController = TextEditingController(text: widget.data.segmentalSubcutaneousFat['wholeBody']?.toString() ?? '0.0');
+    _segSubTrunkController = TextEditingController(text: widget.data.segmentalSubcutaneousFat['trunk']?.toString() ?? '0.0');
+    _segSubArmsController = TextEditingController(text: widget.data.segmentalSubcutaneousFat['arms']?.toString() ?? '0.0');
+    _segSubLegsController = TextEditingController(text: widget.data.segmentalSubcutaneousFat['legs']?.toString() ?? '0.0');
     
-    // Segmental Skeletal Muscle
-    _segMusTrunkController = TextEditingController(text: widget.data.segmentalSkeletalMuscle['trunk']!.toString());
-    _segMusRightArmController = TextEditingController(text: widget.data.segmentalSkeletalMuscle['rightArm']!.toString());
-    _segMusLeftArmController = TextEditingController(text: widget.data.segmentalSkeletalMuscle['leftArm']!.toString());
-    _segMusRightLegController = TextEditingController(text: widget.data.segmentalSkeletalMuscle['rightLeg']!.toString());
-    _segMusLeftLegController = TextEditingController(text: widget.data.segmentalSkeletalMuscle['leftLeg']!.toString());
-
+    _segMusWholeBodyController = TextEditingController(text: widget.data.segmentalSkeletalMuscle['wholeBody']?.toString() ?? '0.0');
+    _segMusTrunkController = TextEditingController(text: widget.data.segmentalSkeletalMuscle['trunk']?.toString() ?? '0.0');
+    _segMusArmsController = TextEditingController(text: widget.data.segmentalSkeletalMuscle['arms']?.toString() ?? '0.0');
+    _segMusLegsController = TextEditingController(text: widget.data.segmentalSkeletalMuscle['legs']?.toString() ?? '0.0');
+    
+    // Set gender
     _selectedGender = widget.data.gender;
   }
 
   void _setupListeners() {
-    // Auto-calculate BMI when weight or height changes (if enabled)
+    // Auto-calculate BMI when weight or height changes
     _weightController.addListener(_calculateBMI);
     _heightController.addListener(_calculateBMI);
     
-    // Auto-calculate segmental data when main values change (if enabled)
+    // Auto-calculate segmental data when main values change
     _subcutaneousFatController.addListener(_calculateSegmentalData);
     _skeletalMuscleController.addListener(_calculateSegmentalData);
 
-    // Track changes
-    _patientNameController.addListener(_onFieldChanged);
-    _whatsappController.addListener(_onFieldChanged);
-    _ageController.addListener(_onFieldChanged);
-    _heightController.addListener(_onFieldChanged);
-    _weightController.addListener(_onFieldChanged);
-    _bodyFatController.addListener(_onFieldChanged);
-    _bmiController.addListener(_onFieldChanged);
-    _skeletalMuscleController.addListener(_onFieldChanged);
-    _visceralFatController.addListener(_onFieldChanged);
-    _restingMetabolismController.addListener(_onFieldChanged);
-    _bodyAgeController.addListener(_onFieldChanged);
-    _subcutaneousFatController.addListener(_onFieldChanged);
-    
-    // Add name formatting
+    // Add listener for name formatting
     _patientNameController.addListener(_formatPatientName);
-  }
-
-  void _onFieldChanged() {
-    if (!_isUpdated) {
-      setState(() {
-        _isUpdated = true;
-      });
-    }
   }
 
   void _formatPatientName() {
@@ -183,58 +157,28 @@ class _OmronEditScreenState extends State<OmronEditScreen> {
     
     if (subcutaneousFat > 0) {
       final segmental = OmronData.calculateSegmentalSubcutaneousFat(subcutaneousFat);
+      _segSubWholeBodyController.text = segmental['wholeBody']!.toStringAsFixed(1);
       _segSubTrunkController.text = segmental['trunk']!.toStringAsFixed(1);
-      _segSubRightArmController.text = segmental['rightArm']!.toStringAsFixed(1);
-      _segSubLeftArmController.text = segmental['leftArm']!.toStringAsFixed(1);
-      _segSubRightLegController.text = segmental['rightLeg']!.toStringAsFixed(1);
-      _segSubLeftLegController.text = segmental['leftLeg']!.toStringAsFixed(1);
+      _segSubArmsController.text = segmental['arms']!.toStringAsFixed(1);
+      _segSubLegsController.text = segmental['legs']!.toStringAsFixed(1);
     }
     
     if (skeletalMuscle > 0) {
       final segmental = OmronData.calculateSegmentalSkeletalMuscle(skeletalMuscle);
+      _segMusWholeBodyController.text = segmental['wholeBody']!.toStringAsFixed(1);
       _segMusTrunkController.text = segmental['trunk']!.toStringAsFixed(1);
-      _segMusRightArmController.text = segmental['rightArm']!.toStringAsFixed(1);
-      _segMusLeftArmController.text = segmental['leftArm']!.toStringAsFixed(1);
-      _segMusRightLegController.text = segmental['rightLeg']!.toStringAsFixed(1);
-      _segMusLeftLegController.text = segmental['leftLeg']!.toStringAsFixed(1);
+      _segMusArmsController.text = segmental['arms']!.toStringAsFixed(1);
+      _segMusLegsController.text = segmental['legs']!.toStringAsFixed(1);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: _onWillPop,
-      child: Scaffold(
-        backgroundColor: Colors.grey[50],
-        appBar: _buildAppBar(),
-        body: _buildResponsiveBody(),
-      ),
+    return Scaffold(
+      backgroundColor: Colors.grey[50],
+      appBar: _buildAppBar(),
+      body: _buildResponsiveBody(),
     );
-  }
-
-  Future<bool> _onWillPop() async {
-    if (_isUpdated) {
-      final shouldDiscard = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Perubahan Belum Disimpan'),
-          content: const Text('Anda memiliki perubahan yang belum disimpan. Apakah Anda yakin ingin keluar?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Batal'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: const Text('Keluar'),
-            ),
-          ],
-        ),
-      );
-      return shouldDiscard ?? false;
-    }
-    return true;
   }
 
   PreferredSizeWidget _buildAppBar() {
@@ -244,10 +188,10 @@ class _OmronEditScreenState extends State<OmronEditScreen> {
         children: [
           const Text(
             'Edit Data Omron',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           Text(
-            widget.data.patientName,
+            'Pasien: ${widget.data.patientName}',
             style: const TextStyle(fontSize: 12, color: Colors.white70),
           ),
         ],
@@ -256,20 +200,16 @@ class _OmronEditScreenState extends State<OmronEditScreen> {
       foregroundColor: Colors.white,
       elevation: 0,
       actions: [
-        if (_isUpdated) ...[
-          Container(
-            margin: const EdgeInsets.only(right: 8),
-            child: IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: _resetToOriginal,
-              tooltip: 'Reset ke data asli',
-            ),
+        if (_updatedResult != null)
+          IconButton(
+            icon: const Icon(Icons.preview),
+            onPressed: _showPreviewDialog,
+            tooltip: 'Preview Hasil',
           ),
-        ],
         IconButton(
-          icon: const Icon(Icons.preview),
-          onPressed: _previewUpdatedData,
-          tooltip: 'Preview perubahan',
+          icon: const Icon(Icons.history),
+          onPressed: () => Navigator.pushNamed(context, '/history'),
+          tooltip: 'Riwayat Data',
         ),
       ],
     );
@@ -325,7 +265,7 @@ class _OmronEditScreenState extends State<OmronEditScreen> {
           ),
         ),
         // Right side: Preview
-        if (_previewResult != null)
+        if (_updatedResult != null)
           Expanded(
             flex: 3,
             child: Container(
@@ -344,14 +284,14 @@ class _OmronEditScreenState extends State<OmronEditScreen> {
                         borderRadius: BorderRadius.circular(8),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.grey.withOpacity(0.1),
+                            color: Colors.grey.withValues(alpha: 0.1),
                             spreadRadius: 1,
                             blurRadius: 4,
                             offset: const Offset(0, 2),
                           ),
                         ],
                       ),
-                      child: OmronResultCard(data: _previewResult!),
+                      child: OmronResultCard(data: _updatedResult!),
                     ),
                   ),
                 ],
@@ -371,14 +311,22 @@ class _OmronEditScreenState extends State<OmronEditScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeaderCard(),
-            const SizedBox(height: 16),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(child: _buildPatientInfoCard()),
+                Expanded(
+                  child: Column(
+                    children: [
+                      _buildHeaderCard(),
+                      const SizedBox(height: 16),
+                      _buildPatientInfoCard(),
+                    ],
+                  ),
+                ),
                 const SizedBox(width: 16),
-                Expanded(child: _buildBasicOmronDataCard()),
+                Expanded(
+                  child: _buildBasicOmronDataCard(),
+                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -387,7 +335,7 @@ class _OmronEditScreenState extends State<OmronEditScreen> {
             _buildSegmentalDataCard(),
             const SizedBox(height: 16),
             _buildActionButtons(),
-            if (_previewResult != null) ...[
+            if (_updatedResult != null) ...[
               const SizedBox(height: 20),
               _buildPreviewSection(),
             ],
@@ -418,7 +366,7 @@ class _OmronEditScreenState extends State<OmronEditScreen> {
             _buildSegmentalDataCard(),
             const SizedBox(height: 16),
             _buildActionButtons(),
-            if (_previewResult != null) ...[
+            if (_updatedResult != null) ...[
               const SizedBox(height: 20),
               _buildPreviewSection(),
             ],
@@ -464,47 +412,23 @@ class _OmronEditScreenState extends State<OmronEditScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Data Asli: ${DateFormat('dd/MM/yyyy HH:mm').format(widget.data.timestamp)}',
+                    'Modifikasi data hasil pengukuran body composition',
                     style: TextStyle(
                       color: Colors.grey[600],
                       fontSize: 14,
                     ),
                   ),
-                  if (widget.data.isWhatsAppSent) ...[
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(Icons.check_circle, color: Colors.green[600], size: 16),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Sudah dikirim via WhatsApp',
-                          style: TextStyle(
-                            color: Colors.green[600],
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
+                  const SizedBox(height: 4),
+                  Text(
+                    'Data asli: ${DateFormat('dd/MM/yyyy HH:mm').format(widget.data.timestamp)}',
+                    style: TextStyle(
+                      color: Colors.grey[500],
+                      fontSize: 12,
                     ),
-                  ],
+                  ),
                 ],
               ),
             ),
-            if (_isUpdated)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.orange[100],
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  'Ada Perubahan',
-                  style: TextStyle(
-                    color: Colors.orange[700],
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
           ],
         ),
       ),
@@ -521,13 +445,12 @@ class _OmronEditScreenState extends State<OmronEditScreen> {
       onGenderChanged: (value) {
         setState(() {
           _selectedGender = value!;
-          _isUpdated = true;
         });
       },
+      isEditing: true,
     );
   }
 
-  // [Implement other build methods similar to OmronInputScreen but with edit-specific modifications]
   Widget _buildBasicOmronDataCard() {
     return Card(
       elevation: 2,
@@ -554,89 +477,199 @@ class _OmronEditScreenState extends State<OmronEditScreen> {
             ),
             const SizedBox(height: 16),
             
-            _buildNumberInputField(
-              controller: _weightController,
-              label: 'Berat Badan (kg)',
-              icon: Icons.scale,
-              hint: 'Contoh: 75,5 atau 75.5',
-              suffix: 'kg',
-            ),
-            
-            _buildNumberInputField(
-              controller: _bodyFatController,
-              label: 'Body Fat (%)',
-              icon: Icons.pie_chart_outline,
-              hint: 'Contoh: 18,5 atau 18.5',
-              suffix: '%',
-            ),
-            
-            Row(
-              children: [
-                Expanded(
-                  child: _buildNumberInputField(
-                    controller: _bmiController,
-                    label: 'BMI',
-                    icon: Icons.straighten,
-                    hint: 'Contoh: 23,4 atau 23.4',
-                    enabled: !_autoCalculateBMI,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Column(
-                  children: [
-                    const Text('Auto', style: TextStyle(fontSize: 12)),
-                    Switch(
-                      value: _autoCalculateBMI,
-                      onChanged: (value) {
-                        setState(() {
-                          _autoCalculateBMI = value;
-                          _isUpdated = true;
-                          if (value) _calculateBMI();
-                        });
-                      },
-                      activeColor: Colors.blue[700],
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            
-            _buildNumberInputField(
-              controller: _skeletalMuscleController,
-              label: 'Skeletal Muscle (%)',
-              icon: Icons.fitness_center,
-              hint: 'Contoh: 42,1 atau 42.1',
-              suffix: '%',
-            ),
-            
-            _buildNumberInputField(
-              controller: _visceralFatController,
-              label: 'Visceral Fat',
-              icon: Icons.favorite_outline,
-              hint: 'Contoh: 8,5 atau 8.5',
-              isInteger: false,
-            ),
-            
-            _buildNumberInputField(
-              controller: _restingMetabolismController,
-              label: 'Metabolism (kcal)',
-              icon: Icons.local_fire_department,
-              hint: 'Contoh: 1650',
-              suffix: 'kcal',
-              isInteger: true,
-            ),
-            
-            _buildNumberInputField(
-              controller: _bodyAgeController,
-              label: 'Body Age (tahun)',
-              icon: Icons.schedule,
-              hint: 'Contoh: 28',
-              suffix: 'tahun',
-              isInteger: true,
+            LayoutBuilder(
+              builder: (context, constraints) {
+                if (constraints.maxWidth > 600) {
+                  return _buildBasicTwoColumnForm();
+                } else {
+                  return _buildBasicSingleColumnForm();
+                }
+              },
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildBasicTwoColumnForm() {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _buildNumberInputField(
+                controller: _weightController,
+                label: 'Berat Badan (kg)',
+                icon: Icons.scale,
+                hint: 'Contoh: 75,5 atau 75.5',
+                suffix: 'kg',
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildNumberInputField(
+                controller: _bodyFatController,
+                label: 'Body Fat (%)',
+                icon: Icons.pie_chart_outline,
+                hint: 'Contoh: 18,5 atau 18.5',
+                suffix: '%',
+              ),
+            ),
+          ],
+        ),
+        
+        Row(
+          children: [
+            Expanded(
+              child: _buildNumberInputField(
+                controller: _bmiController,
+                label: 'BMI',
+                icon: Icons.straighten,
+                hint: 'Contoh: 23,4 atau 23.4',
+                enabled: !_autoCalculateBMI,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Column(
+              children: [
+                const Text('Auto', style: TextStyle(fontSize: 12)),
+                Switch(
+                  value: _autoCalculateBMI,
+                  onChanged: (value) {
+                    setState(() {
+                      _autoCalculateBMI = value;
+                      if (value) _calculateBMI();
+                    });
+                  },
+                  activeColor: Colors.blue[700],
+                ),
+              ],
+            ),
+            const SizedBox(width: 16),
+            const Expanded(child: SizedBox()),
+          ],
+        ),
+        
+        Row(
+          children: [
+            Expanded(
+              child: _buildNumberInputField(
+                controller: _visceralFatController,
+                label: 'Visceral Fat',
+                icon: Icons.favorite_outline,
+                hint: 'Contoh: 8,5 atau 8.5',
+                isInteger: false,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildNumberInputField(
+                controller: _restingMetabolismController,
+                label: 'Metabolism (kcal)',
+                icon: Icons.local_fire_department,
+                hint: 'Contoh: 1650',
+                suffix: 'kcal',
+                isInteger: true,
+              ),
+            ),
+          ],
+        ),
+        
+        Row(
+          children: [
+            Expanded(
+              child: _buildNumberInputField(
+                controller: _bodyAgeController,
+                label: 'Body Age (tahun)',
+                icon: Icons.schedule,
+                hint: 'Contoh: 28',
+                suffix: 'tahun',
+                isInteger: true,
+              ),
+            ),
+            const Expanded(child: SizedBox()),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBasicSingleColumnForm() {
+    return Column(
+      children: [
+        _buildNumberInputField(
+          controller: _weightController,
+          label: 'Berat Badan (kg)',
+          icon: Icons.scale,
+          hint: 'Contoh: 75,5 atau 75.5',
+          suffix: 'kg',
+        ),
+        
+        _buildNumberInputField(
+          controller: _bodyFatController,
+          label: 'Body Fat Percentage (%)',
+          icon: Icons.pie_chart_outline,
+          hint: 'Contoh: 18,5 atau 18.5',
+          suffix: '%',
+        ),
+        
+        Row(
+          children: [
+            Expanded(
+              child: _buildNumberInputField(
+                controller: _bmiController,
+                label: 'Body Mass Index (BMI)',
+                icon: Icons.straighten,
+                hint: 'Contoh: 23,4 atau 23.4',
+                enabled: !_autoCalculateBMI,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Column(
+              children: [
+                const Text('Auto', style: TextStyle(fontSize: 12)),
+                Switch(
+                  value: _autoCalculateBMI,
+                  onChanged: (value) {
+                    setState(() {
+                      _autoCalculateBMI = value;
+                      if (value) _calculateBMI();
+                    });
+                  },
+                  activeColor: Colors.blue[700],
+                ),
+              ],
+            ),
+          ],
+        ),
+        
+        _buildNumberInputField(
+          controller: _visceralFatController,
+          label: 'Visceral Fat Level',
+          icon: Icons.favorite_outline,
+          hint: 'Contoh: 8,5 atau 8.5',
+          isInteger: false,
+        ),
+        
+        _buildNumberInputField(
+          controller: _restingMetabolismController,
+          label: 'Resting Metabolism (kcal)',
+          icon: Icons.local_fire_department,
+          hint: 'Contoh: 1650',
+          suffix: 'kcal',
+          isInteger: true,
+        ),
+        
+        _buildNumberInputField(
+          controller: _bodyAgeController,
+          label: 'Body Age (tahun)',
+          icon: Icons.schedule,
+          hint: 'Contoh: 28',
+          suffix: 'tahun',
+          isInteger: true,
+        ),
+      ],
     );
   }
 
@@ -650,15 +683,15 @@ class _OmronEditScreenState extends State<OmronEditScreen> {
           children: [
             Row(
               children: [
-                Icon(Icons.add_circle, color: Colors.purple[700]),
+                Icon(Icons.add_circle, color: Colors.green[700]),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Data Tambahan',
+                    'Data Tambahan Omron HBF-375',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.purple[700],
+                      color: Colors.green[700],
                     ),
                   ),
                 ),
@@ -667,10 +700,18 @@ class _OmronEditScreenState extends State<OmronEditScreen> {
             const SizedBox(height: 16),
             
             _buildNumberInputField(
+              controller: _skeletalMuscleController,
+              label: 'Skeletal Muscle Percentage (%)',
+              icon: Icons.fitness_center,
+              hint: 'Contoh: 35,2 atau 35.2',
+              suffix: '%',
+            ),
+            
+            _buildNumberInputField(
               controller: _subcutaneousFatController,
-              label: 'Subcutaneous Fat (%)',
+              label: 'Subcutaneous Fat Percentage (%)',
               icon: Icons.layers,
-              hint: 'Contoh: 15,2 atau 15.2',
+              hint: 'Contoh: 14,8 atau 14.8',
               suffix: '%',
             ),
           ],
@@ -693,7 +734,7 @@ class _OmronEditScreenState extends State<OmronEditScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Data Segmental',
+                    'Data Segmental per Area Tubuh',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -703,13 +744,12 @@ class _OmronEditScreenState extends State<OmronEditScreen> {
                 ),
                 Column(
                   children: [
-                    const Text('Auto Calc', style: TextStyle(fontSize: 10)),
+                    const Text('Auto', style: TextStyle(fontSize: 12)),
                     Switch(
                       value: _autoCalculateSegmental,
                       onChanged: (value) {
                         setState(() {
                           _autoCalculateSegmental = value;
-                          _isUpdated = true;
                           if (value) _calculateSegmentalData();
                         });
                       },
@@ -719,72 +759,113 @@ class _OmronEditScreenState extends State<OmronEditScreen> {
                 ),
               ],
             ),
+            
+            if (_autoCalculateSegmental) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.purple[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.purple[200]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.purple[700], size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Data segmental dihitung otomatis berdasarkan nilai total',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.purple[700],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            
             const SizedBox(height: 16),
             
+            // Subcutaneous Fat Segmental
             Text(
               'Subcutaneous Fat per Segmen (%)',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Colors.purple[700],
+                color: Colors.purple[600],
               ),
             ),
             const SizedBox(height: 8),
             
-            Row(
-              children: [
-                Expanded(
-                  child: _buildNumberInputField(
-                    controller: _segSubTrunkController,
-                    label: 'Trunk',
-                    icon: Icons.airline_seat_recline_normal,
-                    hint: '0,0',
-                    suffix: '%',
-                    enabled: !_autoCalculateSegmental,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildNumberInputField(
-                    controller: _segSubRightArmController,
-                    label: 'Right Arm',
-                    icon: Icons.back_hand,
-                    hint: '0,0',
-                    suffix: '%',
-                    enabled: !_autoCalculateSegmental,
-                  ),
-                ),
-              ],
-            ),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildNumberInputField(
-                    controller: _segSubLeftArmController,
-                    label: 'Left Arm',
-                    icon: Icons.front_hand,
-                    hint: '0,0',
-                    suffix: '%',
-                    enabled: !_autoCalculateSegmental,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildNumberInputField(
-                    controller: _segSubRightLegController,
-                    label: 'Right Leg',
-                    icon: Icons.directions_walk,
-                    hint: '0,0',
-                    suffix: '%',
-                    enabled: !_autoCalculateSegmental,
-                  ),
-                ),
-              ],
-            ),
             _buildNumberInputField(
-              controller: _segSubLeftLegController,
-              label: 'Left Leg',
-              icon: Icons.directions_run,
+              controller: _segSubWholeBodyController,
+              label: 'Whole Body (Seluruh Tubuh)',
+              icon: Icons.accessibility_new,
+              hint: '0,0',
+              suffix: '%',
+              enabled: !_autoCalculateSegmental,
+            ),
+            
+            LayoutBuilder(
+              builder: (context, constraints) {
+                if (constraints.maxWidth > 600) {
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: _buildNumberInputField(
+                          controller: _segSubTrunkController,
+                          label: 'Trunk (Batang Tubuh)',
+                          icon: Icons.airline_seat_recline_normal,
+                          hint: '0,0',
+                          suffix: '%',
+                          enabled: !_autoCalculateSegmental,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildNumberInputField(
+                          controller: _segSubArmsController,
+                          label: 'Arms (Kedua Lengan)',
+                          icon: Icons.sports_martial_arts,
+                          hint: '0,0',
+                          suffix: '%',
+                          enabled: !_autoCalculateSegmental,
+                        ),
+                      ),
+                    ],
+                  );
+                } else {
+                  return Column(
+                    children: [
+                      _buildNumberInputField(
+                        controller: _segSubTrunkController,
+                        label: 'Trunk (Batang Tubuh)',
+                        icon: Icons.airline_seat_recline_normal,
+                        hint: '0,0',
+                        suffix: '%',
+                        enabled: !_autoCalculateSegmental,
+                      ),
+                      _buildNumberInputField(
+                        controller: _segSubArmsController,
+                        label: 'Arms (Kedua Lengan)',
+                        icon: Icons.sports_martial_arts,
+                        hint: '0,0',
+                        suffix: '%',
+                        enabled: !_autoCalculateSegmental,
+                      ),
+                    ],
+                  );
+                }
+              },
+            ),
+            
+            _buildNumberInputField(
+              controller: _segSubLegsController,
+              label: 'Legs (Kedua Kaki)',
+              icon: Icons.directions_walk,
               hint: '0,0',
               suffix: '%',
               enabled: !_autoCalculateSegmental,
@@ -792,70 +873,83 @@ class _OmronEditScreenState extends State<OmronEditScreen> {
             
             const SizedBox(height: 24),
             
+            // Skeletal Muscle Segmental
             Text(
               'Skeletal Muscle per Segmen (%)',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Colors.purple[700],
+                color: Colors.red[600],
               ),
             ),
             const SizedBox(height: 8),
             
-            Row(
-              children: [
-                Expanded(
-                  child: _buildNumberInputField(
-                    controller: _segMusTrunkController,
-                    label: 'Trunk',
-                    icon: Icons.airline_seat_recline_normal,
-                    hint: '0,0',
-                    suffix: '%',
-                    enabled: !_autoCalculateSegmental,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildNumberInputField(
-                    controller: _segMusRightArmController,
-                    label: 'Right Arm',
-                    icon: Icons.back_hand,
-                    hint: '0,0',
-                    suffix: '%',
-                    enabled: !_autoCalculateSegmental,
-                  ),
-                ),
-              ],
-            ),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildNumberInputField(
-                    controller: _segMusLeftArmController,
-                    label: 'Left Arm',
-                    icon: Icons.front_hand,
-                    hint: '0,0',
-                    suffix: '%',
-                    enabled: !_autoCalculateSegmental,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildNumberInputField(
-                    controller: _segMusRightLegController,
-                    label: 'Right Leg',
-                    icon: Icons.directions_walk,
-                    hint: '0,0',
-                    suffix: '%',
-                    enabled: !_autoCalculateSegmental,
-                  ),
-                ),
-              ],
-            ),
             _buildNumberInputField(
-              controller: _segMusLeftLegController,
-              label: 'Left Leg',
-              icon: Icons.directions_run,
+              controller: _segMusWholeBodyController,
+              label: 'Whole Body (Seluruh Tubuh)',
+              icon: Icons.accessibility_new,
+              hint: '0,0',
+              suffix: '%',
+              enabled: !_autoCalculateSegmental,
+            ),
+            
+            LayoutBuilder(
+              builder: (context, constraints) {
+                if (constraints.maxWidth > 600) {
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: _buildNumberInputField(
+                          controller: _segMusTrunkController,
+                          label: 'Trunk (Batang Tubuh)',
+                          icon: Icons.airline_seat_recline_normal,
+                          hint: '0,0',
+                          suffix: '%',
+                          enabled: !_autoCalculateSegmental,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildNumberInputField(
+                          controller: _segMusArmsController,
+                          label: 'Arms (Kedua Lengan)',
+                          icon: Icons.sports_martial_arts,
+                          hint: '0,0',
+                          suffix: '%',
+                          enabled: !_autoCalculateSegmental,
+                        ),
+                      ),
+                    ],
+                  );
+                } else {
+                  return Column(
+                    children: [
+                      _buildNumberInputField(
+                        controller: _segMusTrunkController,
+                        label: 'Trunk (Batang Tubuh)',
+                        icon: Icons.airline_seat_recline_normal,
+                        hint: '0,0',
+                        suffix: '%',
+                        enabled: !_autoCalculateSegmental,
+                      ),
+                      _buildNumberInputField(
+                        controller: _segMusArmsController,
+                        label: 'Arms (Kedua Lengan)',
+                        icon: Icons.sports_martial_arts,
+                        hint: '0,0',
+                        suffix: '%',
+                        enabled: !_autoCalculateSegmental,
+                      ),
+                    ],
+                  );
+                }
+              },
+            ),
+            
+            _buildNumberInputField(
+              controller: _segMusLegsController,
+              label: 'Legs (Kedua Kaki)',
+              icon: Icons.directions_walk,
               hint: '0,0',
               suffix: '%',
               enabled: !_autoCalculateSegmental,
@@ -870,10 +964,10 @@ class _OmronEditScreenState extends State<OmronEditScreen> {
     required TextEditingController controller,
     required String label,
     required IconData icon,
-    String? hint,
-    String? suffix,
-    bool isInteger = false,
+    String hint = '',
+    String suffix = '',
     bool enabled = true,
+    bool isInteger = false,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -885,37 +979,42 @@ class _OmronEditScreenState extends State<OmronEditScreen> {
           if (isInteger)
             FilteringTextInputFormatter.digitsOnly
           else
-            FilteringTextInputFormatter.allow(RegExp(r'^\d*[.,]?\d*')),
+            FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
         ],
         decoration: InputDecoration(
           labelText: label,
           hintText: hint,
+          suffixText: suffix.isNotEmpty ? suffix : null,
           prefixIcon: Icon(icon, color: enabled ? Colors.blue[700] : Colors.grey),
-          suffixText: suffix,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Colors.grey[300]!),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
             borderSide: BorderSide(color: Colors.blue[700]!, width: 2),
           ),
+          disabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Colors.grey[200]!),
+          ),
           filled: true,
-          fillColor: enabled ? Colors.white : Colors.grey[100],
+          fillColor: enabled ? Colors.white : Colors.grey[50],
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         ),
         validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'Field ini wajib diisi';
+          if (value == null || value.trim().isEmpty) {
+                        return 'Field ini wajib diisi';
           }
-          if (isInteger) {
-            if (int.tryParse(value) == null) {
-              return 'Masukkan angka yang valid';
-            }
-          } else {
-            final normalizedValue = value.replaceAll(',', '.');
-            if (double.tryParse(normalizedValue) == null) {
-              return 'Masukkan angka yang valid (gunakan koma atau titik untuk desimal)';
-            }
+          
+          final numValue = OmronData.parseDecimalInput(value);
+          if (numValue <= 0) {
+            return 'Nilai harus lebih dari 0';
           }
+          
           return null;
         },
       ),
@@ -923,67 +1022,61 @@ class _OmronEditScreenState extends State<OmronEditScreen> {
   }
 
   Widget _buildActionButtons() {
-    return Column(
+    return Row(
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: _previewUpdatedData,
-                icon: const Icon(Icons.preview),
-                label: const Text('Preview Perubahan'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.blue[700],
-                  side: BorderSide(color: Colors.blue[700]!),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: _isUpdated ? _resetToOriginal : null,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Reset'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.orange[700],
-                  side: BorderSide(color: Colors.orange[300]!),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          height: 56,
+        Expanded(
           child: ElevatedButton.icon(
-            onPressed: _isLoading ? null : (_isUpdated ? _updateData : null),
-            icon: _isLoading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                : const Icon(Icons.save, size: 24),
+            onPressed: _isLoading ? null : _previewChanges,
+            icon: _isLoading 
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : const Icon(Icons.preview, size: 20),
             label: Text(
-              _isLoading 
-                ? 'Menyimpan...' 
-                : _isUpdated 
-                  ? 'Simpan Perubahan' 
-                  : 'Tidak Ada Perubahan',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              _isLoading ? 'Memproses...' : 'Preview Perubahan',
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: _isUpdated ? Colors.blue[700] : Colors.grey[400],
+              backgroundColor: Colors.blue[600],
               foregroundColor: Colors.white,
-              elevation: _isUpdated ? 4 : 0,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              elevation: _isLoading ? 2 : 4,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: (_isLoading || _updatedResult == null) ? null : _saveChanges,
+            icon: _isLoading 
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : const Icon(Icons.save, size: 20),
+            label: Text(
+              _isLoading ? 'Menyimpan...' : 'Simpan Perubahan',
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _updatedResult != null ? Colors.green[700] : Colors.grey[400],
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              elevation: _isLoading ? 2 : 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
               ),
             ),
           ),
@@ -1004,6 +1097,14 @@ class _OmronEditScreenState extends State<OmronEditScreen> {
         ),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.blue[300]!),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.blue.withValues(alpha: 0.1),
+            spreadRadius: 1,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1024,7 +1125,7 @@ class _OmronEditScreenState extends State<OmronEditScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Preview Perubahan 👀',
+                      'Preview Hasil Edit 📝',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -1032,7 +1133,7 @@ class _OmronEditScreenState extends State<OmronEditScreen> {
                       ),
                     ),
                     Text(
-                      'Hasil setelah perubahan diterapkan',
+                      'Hasil perhitungan ulang dengan data yang dimodifikasi',
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.blue[700],
@@ -1043,15 +1144,75 @@ class _OmronEditScreenState extends State<OmronEditScreen> {
               ),
             ],
           ),
+          
+          const SizedBox(height: 12),
+          
+          // Patient info
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue[200]!),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.person, color: Colors.blue[700], size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _updatedResult?.patientName ?? '',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.blue[800],
+                        ),
+                      ),
+                      Text(
+                        '${_updatedResult?.age} tahun • ${_updatedResult?.gender} • Dimodifikasi: ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      if (_updatedResult?.whatsappNumber != null && _updatedResult!.whatsappNumber!.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(Icons.chat, color: Colors.blue[600], size: 14),
+                            const SizedBox(width: 4),
+                            Text(
+                              'WA: ${_updatedResult!.whatsappNumber}',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.blue[600],
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildPreviewSection() {
-    if (_previewResult == null) return const SizedBox.shrink();
-    
+    if (_updatedResult == null) {
+      return const SizedBox.shrink();
+    }
+
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         _buildPreviewHeader(),
         const SizedBox(height: 16),
@@ -1061,211 +1222,224 @@ class _OmronEditScreenState extends State<OmronEditScreen> {
             minHeight: 200,
             maxHeight: MediaQuery.of(context).size.height * 0.8,
           ),
-          child: OmronResultCard(data: _previewResult!),
+          child: OmronResultCard(data: _updatedResult!),
         ),
       ],
     );
   }
 
-  Future<void> _previewUpdatedData() async {
+  Future<void> _previewChanges() async {
     if (!_formKey.currentState!.validate()) {
       _scrollToFirstError();
       return;
     }
-
-    try {
-      final updatedData = _createUpdatedOmronData();
-      setState(() {
-        _previewResult = updatedData;
-      });
-      
-      _showSuccessSnackBar('Preview berhasil dibuat! Scroll ke bawah untuk melihat hasil.');
-      
-      // Scroll to preview on mobile/tablet
-      if (MediaQuery.of(context).size.width <= 1200) {
-        Future.delayed(const Duration(milliseconds: 300), () {
-          _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 500),
-            curve: Curves.easeInOut,
-          );
-        });
-      }
-    } catch (e) {
-      _showErrorSnackBar('Gagal membuat preview: $e');
-    }
-  }
-
-  Future<void> _updateData() async {
-    if (!_formKey.currentState!.validate()) {
-      _scrollToFirstError();
-      return;
-    }
-
-    final shouldUpdate = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Konfirmasi Update'),
-        content: const Text('Apakah Anda yakin ingin menyimpan perubahan ini?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue[700]),
-            child: const Text('Ya, Simpan'),
-          ),
-        ],
-      ),
-    );
-
-    if (shouldUpdate != true) return;
 
     setState(() {
       _isLoading = true;
     });
 
     try {
-      final updatedData = _createUpdatedOmronData();
-      
-      await _databaseService.updateOmronData(updatedData);
-      
+      // Parse all input values
+      final age = int.tryParse(_ageController.text) ?? 0;
+      final height = OmronData.parseDecimalInput(_heightController.text);
+      final weight = OmronData.parseDecimalInput(_weightController.text);
+      final bodyFat = OmronData.parseDecimalInput(_bodyFatController.text);
+      final bmi = OmronData.parseDecimalInput(_bmiController.text);
+      final skeletalMuscle = OmronData.parseDecimalInput(_skeletalMuscleController.text);
+      final visceralFat = OmronData.parseDecimalInput(_visceralFatController.text);
+      final restingMetabolism = int.tryParse(_restingMetabolismController.text) ?? 0;
+      final bodyAge = int.tryParse(_bodyAgeController.text) ?? 0;
+      final subcutaneousFat = OmronData.parseDecimalInput(_subcutaneousFatController.text);
+
+      // Get segmental data
+      Map<String, double> segmentalSubcutaneous = {
+        'wholeBody': OmronData.parseDecimalInput(_segSubWholeBodyController.text),
+        'trunk': OmronData.parseDecimalInput(_segSubTrunkController.text),
+        'arms': OmronData.parseDecimalInput(_segSubArmsController.text),
+        'legs': OmronData.parseDecimalInput(_segSubLegsController.text),
+      };
+
+      Map<String, double> segmentalSkeletal = {
+        'wholeBody': OmronData.parseDecimalInput(_segMusWholeBodyController.text),
+        'trunk': OmronData.parseDecimalInput(_segMusTrunkController.text),
+        'arms': OmronData.parseDecimalInput(_segMusArmsController.text),
+        'legs': OmronData.parseDecimalInput(_segMusLegsController.text),
+      };
+
+      // Calculate same age comparison
+      final sameAgeComparison = OmronData.calculateSameAgeComparison(
+        bodyFat, 
+        age, 
+        _selectedGender,
+      );
+
+      // Create updated OmronData object
+      final updatedData = OmronData(
+        id: widget.data.id, // Keep original ID
+        timestamp: widget.data.timestamp, // Keep original timestamp
+        patientName: _patientNameController.text.trim(),
+        whatsappNumber: _whatsappController.text.trim().isEmpty 
+          ? null 
+          : _whatsappController.text.trim(),
+        age: age,
+        gender: _selectedGender,
+        height: height,
+        weight: weight,
+        bodyFatPercentage: bodyFat,
+        bmi: bmi,
+        skeletalMusclePercentage: skeletalMuscle,
+        visceralFatLevel: visceralFat,
+        restingMetabolism: restingMetabolism,
+        bodyAge: bodyAge,
+        subcutaneousFatPercentage: subcutaneousFat,
+        segmentalSubcutaneousFat: segmentalSubcutaneous,
+        segmentalSkeletalMuscle: segmentalSkeletal,
+        sameAgeComparison: sameAgeComparison,
+        // Keep WhatsApp status from original
+        isWhatsAppSent: widget.data.isWhatsAppSent,
+        whatsappSentAt: widget.data.whatsappSentAt,
+      );
+
       setState(() {
+        _updatedResult = updatedData;
         _isLoading = false;
-        _isUpdated = false;
       });
 
-      _showSuccessSnackBar('Data berhasil diperbarui!');
-      
-      // Show success dialog
-      _showUpdateSuccessDialog();
-      
+      // Scroll to result (untuk mobile)
+      if (MediaQuery.of(context).size.width <= 800) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 800),
+          curve: Curves.easeInOut,
+        );
+      }
+
+      // Show success snackbar
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Preview berhasil! Silakan review hasil dan simpan jika sudah sesuai',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.blue[600],
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+      }
+
     } catch (e) {
       setState(() {
         _isLoading = false;
       });
-      _showErrorSnackBar('Gagal memperbarui data: $e');
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text('Terjadi kesalahan: ${e.toString()}'),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red[600],
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+      }
     }
   }
 
-  OmronData _createUpdatedOmronData() {
-    // Get segmental data
-    Map<String, double> segmentalSubcutaneous = {
-      'trunk': OmronData.parseDecimalInput(_segSubTrunkController.text),
-      'rightArm': OmronData.parseDecimalInput(_segSubRightArmController.text),
-      'leftArm': OmronData.parseDecimalInput(_segSubLeftArmController.text),
-      'rightLeg': OmronData.parseDecimalInput(_segSubRightLegController.text),
-      'leftLeg': OmronData.parseDecimalInput(_segSubLeftLegController.text),
-    };
-
-    Map<String, double> segmentalSkeletal = {
-      'trunk': OmronData.parseDecimalInput(_segMusTrunkController.text),
-      'rightArm': OmronData.parseDecimalInput(_segMusRightArmController.text),
-      'leftArm': OmronData.parseDecimalInput(_segMusLeftArmController.text),
-      'rightLeg': OmronData.parseDecimalInput(_segMusRightLegController.text),
-      'leftLeg': OmronData.parseDecimalInput(_segMusLeftLegController.text),
-    };
-
-    // Calculate same age comparison
-    final bodyFat = OmronData.parseDecimalInput(_bodyFatController.text);
-    final age = int.parse(_ageController.text);
-    final sameAgeComparison = OmronData.calculateSameAgeComparison(bodyFat, age, _selectedGender);
-
-    return widget.data.copyWith(
-      patientName: _patientNameController.text.trim(),
-      whatsappNumber: _whatsappController.text.trim().isEmpty 
-        ? null 
-        : _whatsappController.text.trim(),
-      age: age,
-      gender: _selectedGender,
-      height: OmronData.parseDecimalInput(_heightController.text),
-      weight: OmronData.parseDecimalInput(_weightController.text),
-      bodyFatPercentage: bodyFat,
-      bmi: OmronData.parseDecimalInput(_bmiController.text),
-      skeletalMusclePercentage: OmronData.parseDecimalInput(_skeletalMuscleController.text),
-      visceralFatLevel: OmronData.parseDecimalInput(_visceralFatController.text),
-      restingMetabolism: int.parse(_restingMetabolismController.text),
-      bodyAge: int.parse(_bodyAgeController.text),
-      subcutaneousFatPercentage: OmronData.parseDecimalInput(_subcutaneousFatController.text),
-      segmentalSubcutaneousFat: segmentalSubcutaneous,
-      segmentalSkeletalMuscle: segmentalSkeletal,
-      sameAgeComparison: sameAgeComparison,
-      // Keep original WhatsApp sent status
-      isWhatsAppSent: widget.data.isWhatsAppSent,
-      whatsappSentAt: widget.data.whatsappSentAt,
-    );
-  }
-
-  void _resetToOriginal() {
+  Future<void> _saveChanges() async {
+    if (_updatedResult == null) return;
+    
     setState(() {
-      _initializeControllers();
-      _isUpdated = false;
-      _previewResult = null;
+      _isLoading = true;
     });
-    _showInfoSnackBar('Data telah direset ke nilai asli');
-  }
-
-  void _showUpdateSuccessDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          icon: Icon(Icons.check_circle, color: Colors.green, size: 48),
-          title: const Text('Data Berhasil Diperbarui! ✅'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('Perubahan data Omron telah berhasil disimpan ke database.'),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.green[50],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.green[200]!),
+    
+    try {
+      await _databaseService.updateOmronData(_updatedResult!);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.save, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '✅ Perubahan berhasil disimpan untuk ${_updatedResult!.patientName}',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Pasien: ${_patientNameController.text}',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      'Data Asli: ${DateFormat('dd/MM/yyyy HH:mm').format(widget.data.timestamp)}',
-                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                    ),
-                    Text(
-                      'Diperbarui: ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}',
-                      style: TextStyle(color: Colors.green[600], fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
+            backgroundColor: Colors.green[700],
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                Navigator.of(context).pop(true); // Return true to indicate update success
-              },
-              child: const Text('Kembali ke Riwayat'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green[700],
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('OK'),
-            ),
-          ],
         );
-      },
-    );
+      }
+      
+      // Return to previous screen with updated data
+      await Future.delayed(const Duration(seconds: 1));
+      if (mounted) {
+        Navigator.of(context).pop(_updatedResult);
+      }
+      
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text('Gagal menyimpan: ${e.toString()}'),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red[600],
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   void _scrollToFirstError() {
@@ -1276,41 +1450,87 @@ class _OmronEditScreenState extends State<OmronEditScreen> {
     );
   }
 
-  void _showSuccessSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green[700],
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 3),
-      ),
-    );
-  }
-
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red[700],
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 3),
-      ),
-    );
-  }
-
-  void _showInfoSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.blue[700],
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 2),
-      ),
+  void _showPreviewDialog() {
+    if (_updatedResult == null) return;
+    
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return Dialog(
+          insetPadding: const EdgeInsets.all(16),
+          child: Container(
+            width: MediaQuery.of(context).size.width * 0.95,
+            height: MediaQuery.of(context).size.height * 0.9,
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                // Header
+                Row(
+                  children: [
+                    Icon(Icons.fullscreen, color: Colors.blue[700]),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Preview Hasil Edit',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue[700],
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close),
+                      tooltip: 'Tutup',
+                    ),
+                  ],
+                ),
+                const Divider(),
+                // Content
+                Expanded(
+                  child: OmronResultCard(data: _updatedResult!),
+                ),
+                // Action buttons
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text('Tutup'),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          _saveChanges();
+                        },
+                        icon: const Icon(Icons.save),
+                        label: const Text('Simpan Perubahan'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green[700],
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
   @override
   void dispose() {
+    // Dispose controllers
+    _scrollController.dispose();
     _patientNameController.dispose();
     _whatsappController.dispose();
     _ageController.dispose();
@@ -1324,19 +1544,18 @@ class _OmronEditScreenState extends State<OmronEditScreen> {
     _bodyAgeController.dispose();
     _subcutaneousFatController.dispose();
     
+    // Dispose segmental controllers
+    _segSubWholeBodyController.dispose();
     _segSubTrunkController.dispose();
-    _segSubRightArmController.dispose();
-    _segSubLeftArmController.dispose();
-    _segSubRightLegController.dispose();
-    _segSubLeftLegController.dispose();
-    
+    _segSubArmsController.dispose();
+    _segSubLegsController.dispose();
+    _segMusWholeBodyController.dispose();
     _segMusTrunkController.dispose();
-    _segMusRightArmController.dispose();
-    _segMusLeftArmController.dispose();
-    _segMusRightLegController.dispose();
-    _segMusLeftLegController.dispose();
+    _segMusArmsController.dispose();
+    _segMusLegsController.dispose();
     
-    _scrollController.dispose();
     super.dispose();
   }
 }
+
+

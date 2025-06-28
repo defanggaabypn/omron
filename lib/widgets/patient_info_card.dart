@@ -8,6 +8,7 @@ class PatientInfoCard extends StatefulWidget {
   final TextEditingController heightController;
   final String selectedGender;
   final ValueChanged<String?> onGenderChanged;
+  final bool isEditing; // ✅ Parameter baru
 
   const PatientInfoCard({
     super.key,
@@ -17,6 +18,7 @@ class PatientInfoCard extends StatefulWidget {
     required this.heightController,
     required this.selectedGender,
     required this.onGenderChanged,
+    this.isEditing = false, // ✅ Default false
   });
 
   @override
@@ -67,28 +69,76 @@ class _PatientInfoCardState extends State<PatientInfoCard> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.blue[100],
+                    color: widget.isEditing ? Colors.orange[100] : Colors.blue[100], // ✅ Warna berbeda saat edit
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
-                    Icons.person,
-                    color: Colors.blue[700],
+                    widget.isEditing ? Icons.edit : Icons.person, // ✅ Icon berbeda saat edit
+                    color: widget.isEditing ? Colors.orange[700] : Colors.blue[700],
                     size: 24,
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Informasi Pasien',
+                    widget.isEditing ? 'Edit Informasi Pasien' : 'Informasi Pasien', // ✅ Title berbeda
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.blue[700],
+                      color: widget.isEditing ? Colors.orange[700] : Colors.blue[700],
                     ),
                   ),
                 ),
+                // ✅ Badge "EDIT" saat mode editing
+                if (widget.isEditing)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.orange[100],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.orange[300]!),
+                    ),
+                    child: Text(
+                      'EDIT',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange[700],
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
               ],
             ),
+            
+            // ✅ Info tambahan saat mode edit
+            if (widget.isEditing) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.orange[50],
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: Colors.orange[200]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.orange[700], size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Mode Edit: Ubah data sesuai kebutuhan, lalu klik Preview untuk melihat hasil',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.orange[700],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            
             const SizedBox(height: 16),
             
             // Patient Name Field - DENGAN FORMAT OTOMATIS
@@ -218,7 +268,9 @@ class _PatientInfoCardState extends State<PatientInfoCard> {
             
             Container(
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey[300]!),
+                border: Border.all(
+                  color: widget.isEditing ? Colors.orange[300]! : Colors.grey[300]!, // ✅ Border berbeda saat edit
+                ),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -236,7 +288,7 @@ class _PatientInfoCardState extends State<PatientInfoCard> {
                       value: 'Male',
                       groupValue: widget.selectedGender,
                       onChanged: widget.onGenderChanged,
-                      activeColor: Colors.blue[700],
+                      activeColor: widget.isEditing ? Colors.orange[700] : Colors.blue[700], // ✅ Warna berbeda
                       dense: true,
                     ),
                   ),
@@ -253,7 +305,7 @@ class _PatientInfoCardState extends State<PatientInfoCard> {
                       value: 'Female',
                       groupValue: widget.selectedGender,
                       onChanged: widget.onGenderChanged,
-                      activeColor: Colors.pink[700],
+                      activeColor: widget.isEditing ? Colors.orange[700] : Colors.pink[700], // ✅ Warna berbeda
                       dense: true,
                     ),
                   ),
@@ -277,7 +329,9 @@ class _PatientInfoCardState extends State<PatientInfoCard> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Laporan dapat langsung dikirim ke WhatsApp setelah analisis selesai',
+                        widget.isEditing 
+                          ? 'Laporan yang sudah diedit dapat dikirim ulang ke WhatsApp'
+                          : 'Laporan dapat langsung dikirim ke WhatsApp setelah analisis selesai',
                         style: TextStyle(
                           fontSize: 11,
                           color: Colors.green[700],
@@ -295,20 +349,26 @@ class _PatientInfoCardState extends State<PatientInfoCard> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.blue[50],
+                  color: widget.isEditing ? Colors.orange[50] : Colors.blue[50],
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: Colors.blue[200]!),
+                  border: Border.all(
+                    color: widget.isEditing ? Colors.orange[200]! : Colors.blue[200]!,
+                  ),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.auto_fix_high, color: Colors.blue[700], size: 16),
+                    Icon(
+                      Icons.auto_fix_high, 
+                      color: widget.isEditing ? Colors.orange[700] : Colors.blue[700], 
+                      size: 16,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Nama otomatis diformat dengan huruf kapital di setiap kata',
                         style: TextStyle(
                           fontSize: 11,
-                          color: Colors.blue[700],
+                          color: widget.isEditing ? Colors.orange[700] : Colors.blue[700],
                         ),
                       ),
                     ),
@@ -341,14 +401,20 @@ class _PatientInfoCardState extends State<PatientInfoCard> {
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
-        prefixIcon: Icon(icon, color: Colors.blue[700]),
+        prefixIcon: Icon(
+          icon, 
+          color: widget.isEditing ? Colors.orange[700] : Colors.blue[700], // ✅ Warna berbeda saat edit
+        ),
         suffixIcon: suffixIcon,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.blue[700]!, width: 2),
+          borderSide: BorderSide(
+            color: widget.isEditing ? Colors.orange[700]! : Colors.blue[700]!, // ✅ Warna berbeda
+            width: 2,
+          ),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
       ),

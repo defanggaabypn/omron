@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -36,19 +37,16 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
   // New Additional Controllers
   final _subcutaneousFatController = TextEditingController();
   
-  // Segmental Controllers - Subcutaneous Fat
+  // UPDATED: Segmental Controllers - NEW STRUCTURE (wholeBody, trunk, arms, legs)
+  final _segSubWholeBodyController = TextEditingController();
   final _segSubTrunkController = TextEditingController();
-  final _segSubRightArmController = TextEditingController();
-  final _segSubLeftArmController = TextEditingController();
-  final _segSubRightLegController = TextEditingController();
-  final _segSubLeftLegController = TextEditingController();
+  final _segSubArmsController = TextEditingController();
+  final _segSubLegsController = TextEditingController();
   
-  // Segmental Controllers - Skeletal Muscle
+  final _segMusWholeBodyController = TextEditingController();
   final _segMusTrunkController = TextEditingController();
-  final _segMusRightArmController = TextEditingController();
-  final _segMusLeftArmController = TextEditingController();
-  final _segMusRightLegController = TextEditingController();
-  final _segMusLeftLegController = TextEditingController();
+  final _segMusArmsController = TextEditingController();
+  final _segMusLegsController = TextEditingController();
 
   String _selectedGender = 'Male';
   bool _isLoading = false;
@@ -119,6 +117,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
     }
   }
 
+  // UPDATED: Calculate segmental data dengan struktur baru
   void _calculateSegmentalData() {
     if (!_autoCalculateSegmental) return;
     
@@ -127,20 +126,18 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
     
     if (subcutaneousFat > 0) {
       final segmental = OmronData.calculateSegmentalSubcutaneousFat(subcutaneousFat);
+      _segSubWholeBodyController.text = segmental['wholeBody']!.toStringAsFixed(1);
       _segSubTrunkController.text = segmental['trunk']!.toStringAsFixed(1);
-      _segSubRightArmController.text = segmental['rightArm']!.toStringAsFixed(1);
-      _segSubLeftArmController.text = segmental['leftArm']!.toStringAsFixed(1);
-      _segSubRightLegController.text = segmental['rightLeg']!.toStringAsFixed(1);
-      _segSubLeftLegController.text = segmental['leftLeg']!.toStringAsFixed(1);
+      _segSubArmsController.text = segmental['arms']!.toStringAsFixed(1);
+      _segSubLegsController.text = segmental['legs']!.toStringAsFixed(1);
     }
     
     if (skeletalMuscle > 0) {
       final segmental = OmronData.calculateSegmentalSkeletalMuscle(skeletalMuscle);
+      _segMusWholeBodyController.text = segmental['wholeBody']!.toStringAsFixed(1);
       _segMusTrunkController.text = segmental['trunk']!.toStringAsFixed(1);
-      _segMusRightArmController.text = segmental['rightArm']!.toStringAsFixed(1);
-      _segMusLeftArmController.text = segmental['leftArm']!.toStringAsFixed(1);
-      _segMusRightLegController.text = segmental['rightLeg']!.toStringAsFixed(1);
-      _segMusLeftLegController.text = segmental['leftLeg']!.toStringAsFixed(1);
+            _segMusArmsController.text = segmental['arms']!.toStringAsFixed(1);
+      _segMusLegsController.text = segmental['legs']!.toStringAsFixed(1);
     }
   }
 
@@ -240,7 +237,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                     const SizedBox(height: 16),
                     _buildAdditionalDataCard(),
                     const SizedBox(height: 16),
-                    _buildSegmentalDataCard(), // FITUR 4: Pindah setelah subcutaneous
+                    _buildSegmentalDataCard(),
                     const SizedBox(height: 16),
                     _buildCalculateButton(),
                     const SizedBox(height: 20),
@@ -472,7 +469,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
             const SizedBox(height: 16),
             _buildAdditionalDataCard(),
             const SizedBox(height: 16),
-            _buildSegmentalDataCard(), // FITUR 4: Pindah setelah subcutaneous
+            _buildSegmentalDataCard(),
             const SizedBox(height: 16),
             _buildCalculateButton(),
             if (_calculatedResult != null) ...[
@@ -514,7 +511,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
             const SizedBox(height: 16),
             _buildAdditionalDataCard(),
             const SizedBox(height: 16),
-            _buildSegmentalDataCard(), // FITUR 4: Pindah setelah subcutaneous
+            _buildSegmentalDataCard(),
             const SizedBox(height: 16),
             _buildCalculateButton(),
             if (_calculatedResult != null) ...[
@@ -916,7 +913,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
           ],
         ),
         
-        // BMI with auto-calculate toggle (TANPA SKELETAL MUSCLE)
+        // BMI with auto-calculate toggle
         Row(
           children: [
             Expanded(
@@ -956,8 +953,8 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                 controller: _visceralFatController,
                 label: 'Visceral Fat',
                 icon: Icons.favorite_outline,
-                hint: 'Contoh: 8,5 atau 8.5', // UPDATED HINT UNTUK KOMA
-                isInteger: false, // UBAH KE FALSE UNTUK SUPPORT DECIMAL
+                hint: 'Contoh: 8,5 atau 8.5',
+                isInteger: false,
               ),
             ),
             const SizedBox(width: 16),
@@ -1012,7 +1009,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
           suffix: '%',
         ),
         
-        // BMI with auto-calculate toggle (TANPA SKELETAL MUSCLE)
+        // BMI with auto-calculate toggle
         Row(
           children: [
             Expanded(
@@ -1047,8 +1044,8 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
           controller: _visceralFatController,
           label: 'Visceral Fat Level',
           icon: Icons.favorite_outline,
-          hint: 'Contoh: 8,5 atau 8.5', // UPDATED HINT UNTUK KOMA
-          isInteger: false, // UBAH KE FALSE UNTUK SUPPORT DECIMAL
+          hint: 'Contoh: 8,5 atau 8.5',
+          isInteger: false,
         ),
         
         _buildNumberInputField(
@@ -1086,7 +1083,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Data Tambahan Omron HBF-375',
+                                        'Data Tambahan Omron HBF-375',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -1098,32 +1095,20 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
             ),
             const SizedBox(height: 16),
             
-            // SUBCUTANEOUS FAT
-            _buildNumberInputField(
-              controller: _subcutaneousFatController,
-              label: 'Subcutaneous Fat (%)',
-              icon: Icons.layers,
-              hint: 'Contoh: 15,2 atau 15.2',
-              suffix: '%',
-            ),
-            
-            // SKELETAL MUSCLE - DIPINDAH KE SINI
             _buildNumberInputField(
               controller: _skeletalMuscleController,
-              label: 'Skeletal Muscle (%)',
+              label: 'Skeletal Muscle Percentage (%)',
               icon: Icons.fitness_center,
-              hint: 'Contoh: 42,1 atau 42.1',
+              hint: 'Contoh: 35,2 atau 35.2',
               suffix: '%',
             ),
             
-            const SizedBox(height: 8),
-            Text(
-              'Same Age Comparison akan dihitung otomatis berdasarkan Body Fat dan Usia',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
-                fontStyle: FontStyle.italic,
-              ),
+            _buildNumberInputField(
+              controller: _subcutaneousFatController,
+              label: 'Subcutaneous Fat Percentage (%)',
+              icon: Icons.layers,
+              hint: 'Contoh: 14,8 atau 14.8',
+              suffix: '%',
             ),
           ],
         ),
@@ -1131,7 +1116,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
     );
   }
 
-  // FITUR 4: FORM SKELETAL SETELAH SUBCUTANEOUS
+  // UPDATED: Segmental data card dengan struktur baru (wholeBody, trunk, arms, legs)
   Widget _buildSegmentalDataCard() {
     return Card(
       elevation: 2,
@@ -1146,7 +1131,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Data Segmental (Per Bagian Tubuh)',
+                    'Data Segmental per Area Tubuh',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -1154,9 +1139,10 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                     ),
                   ),
                 ),
+                // Auto calculate toggle
                 Column(
                   children: [
-                    const Text('Auto Calc', style: TextStyle(fontSize: 10)),
+                    const Text('Auto', style: TextStyle(fontSize: 12)),
                     Switch(
                       value: _autoCalculateSegmental,
                       onChanged: (value) {
@@ -1171,85 +1157,82 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                 ),
               ],
             ),
+            
+            if (_autoCalculateSegmental) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.purple[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.purple[200]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.purple[700], size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Data segmental dihitung otomatis berdasarkan nilai total',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.purple[700],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            
             const SizedBox(height: 16),
             
-            // Subcutaneous Fat Segmental
+            // Subcutaneous Fat Segmental - NEW STRUCTURE
             Text(
               'Subcutaneous Fat per Segmen (%)',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Colors.purple[700],
+                color: Colors.purple[600],
               ),
             ),
             const SizedBox(height: 8),
             
+            _buildNumberInputField(
+              controller: _segSubWholeBodyController,
+              label: 'Whole Body (Seluruh Tubuh)',
+              icon: Icons.accessibility_new,
+              hint: '0,0',
+              suffix: '%',
+              enabled: !_autoCalculateSegmental,
+            ),
+            
+            // Responsive layout for trunk and arms
             LayoutBuilder(
               builder: (context, constraints) {
                 if (constraints.maxWidth > 600) {
-                  return Column(
+                  return Row(
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildNumberInputField(
-                              controller: _segSubTrunkController,
-                              label: 'Trunk',
-                              icon: Icons.airline_seat_recline_normal,
-                              hint: '0,0',
-                              suffix: '%',
-                              enabled: !_autoCalculateSegmental,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildNumberInputField(
-                              controller: _segSubRightArmController,
-                              label: 'Right Arm',
-                              icon: Icons.back_hand,
-                              hint: '0,0',
-                              suffix: '%',
-                              enabled: !_autoCalculateSegmental,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildNumberInputField(
-                              controller: _segSubLeftArmController,
-                              label: 'Left Arm',
-                              icon: Icons.front_hand,
-                              hint: '0,0',
-                              suffix: '%',
-                              enabled: !_autoCalculateSegmental,
-                            ),
-                          ),
-                        ],
+                      Expanded(
+                        child: _buildNumberInputField(
+                          controller: _segSubTrunkController,
+                          label: 'Trunk (Batang Tubuh)',
+                          icon: Icons.airline_seat_recline_normal,
+                          hint: '0,0',
+                          suffix: '%',
+                          enabled: !_autoCalculateSegmental,
+                        ),
                       ),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildNumberInputField(
-                              controller: _segSubRightLegController,
-                              label: 'Right Leg',
-                              icon: Icons.directions_walk,
-                              hint: '0,0',
-                              suffix: '%',
-                              enabled: !_autoCalculateSegmental,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildNumberInputField(
-                              controller: _segSubLeftLegController,
-                              label: 'Left Leg',
-                              icon: Icons.directions_run,
-                              hint: '0,0',
-                              suffix: '%',
-                              enabled: !_autoCalculateSegmental,
-                            ),
-                          ),
-                          const Expanded(child: SizedBox()), // Empty space for balance
-                        ],
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildNumberInputField(
+                          controller: _segSubArmsController,
+                          label: 'Arms (Kedua Lengan)',
+                          icon: Icons.sports_martial_arts,
+                          hint: '0,0',
+                          suffix: '%',
+                          enabled: !_autoCalculateSegmental,
+                        ),
                       ),
                     ],
                   );
@@ -1258,61 +1241,19 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                     children: [
                       _buildNumberInputField(
                         controller: _segSubTrunkController,
-                        label: 'Trunk',
+                        label: 'Trunk (Batang Tubuh)',
                         icon: Icons.airline_seat_recline_normal,
                         hint: '0,0',
                         suffix: '%',
                         enabled: !_autoCalculateSegmental,
                       ),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildNumberInputField(
-                              controller: _segSubRightArmController,
-                              label: 'Right Arm',
-                              icon: Icons.back_hand,
-                              hint: '0,0',
-                              suffix: '%',
-                              enabled: !_autoCalculateSegmental,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildNumberInputField(
-                              controller: _segSubLeftArmController,
-                              label: 'Left Arm',
-                              icon: Icons.front_hand,
-                              hint: '0,0',
-                              suffix: '%',
-                              enabled: !_autoCalculateSegmental,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildNumberInputField(
-                              controller: _segSubRightLegController,
-                              label: 'Right Leg',
-                              icon: Icons.directions_walk,
-                              hint: '0,0',
-                              suffix: '%',
-                              enabled: !_autoCalculateSegmental,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildNumberInputField(
-                              controller: _segSubLeftLegController,
-                              label: 'Left Leg',
-                              icon: Icons.directions_run,
-                              hint: '0,0',
-                              suffix: '%',
-                              enabled: !_autoCalculateSegmental,
-                            ),
-                          ),
-                        ],
+                      _buildNumberInputField(
+                        controller: _segSubArmsController,
+                        label: 'Arms (Kedua Lengan)',
+                        icon: Icons.sports_martial_arts,
+                        hint: '0,0',
+                        suffix: '%',
+                        enabled: !_autoCalculateSegmental,
                       ),
                     ],
                   );
@@ -1320,85 +1261,63 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
               },
             ),
             
+            _buildNumberInputField(
+              controller: _segSubLegsController,
+              label: 'Legs (Kedua Kaki)',
+              icon: Icons.directions_walk,
+              hint: '0,0',
+              suffix: '%',
+              enabled: !_autoCalculateSegmental,
+            ),
+            
             const SizedBox(height: 24),
             
-            // Skeletal Muscle Segmental
+            // Skeletal Muscle Segmental - NEW STRUCTURE
             Text(
               'Skeletal Muscle per Segmen (%)',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Colors.purple[700],
+                color: Colors.red[600],
               ),
             ),
             const SizedBox(height: 8),
             
+            _buildNumberInputField(
+              controller: _segMusWholeBodyController,
+              label: 'Whole Body (Seluruh Tubuh)',
+              icon: Icons.accessibility_new,
+              hint: '0,0',
+              suffix: '%',
+              enabled: !_autoCalculateSegmental,
+            ),
+            
+            // Responsive layout for trunk and arms
             LayoutBuilder(
               builder: (context, constraints) {
                 if (constraints.maxWidth > 600) {
-                  return Column(
+                  return Row(
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildNumberInputField(
-                              controller: _segMusTrunkController,
-                              label: 'Trunk',
-                              icon: Icons.airline_seat_recline_normal,
-                              hint: '0,0',
-                              suffix: '%',
-                              enabled: !_autoCalculateSegmental,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildNumberInputField(
-                              controller: _segMusRightArmController,
-                              label: 'Right Arm',
-                              icon: Icons.back_hand,
-                              hint: '0,0',
-                              suffix: '%',
-                              enabled: !_autoCalculateSegmental,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildNumberInputField(
-                              controller: _segMusLeftArmController,
-                              label: 'Left Arm',
-                              icon: Icons.front_hand,
-                              hint: '0,0',
-                              suffix: '%',
-                              enabled: !_autoCalculateSegmental,
-                            ),
-                          ),
-                        ],
+                      Expanded(
+                        child: _buildNumberInputField(
+                          controller: _segMusTrunkController,
+                          label: 'Trunk (Batang Tubuh)',
+                          icon: Icons.airline_seat_recline_normal,
+                          hint: '0,0',
+                          suffix: '%',
+                          enabled: !_autoCalculateSegmental,
+                        ),
                       ),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildNumberInputField(
-                              controller: _segMusRightLegController,
-                              label: 'Right Leg',
-                              icon: Icons.directions_walk,
-                              hint: '0,0',
-                              suffix: '%',
-                              enabled: !_autoCalculateSegmental,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildNumberInputField(
-                              controller: _segMusLeftLegController,
-                              label: 'Left Leg',
-                              icon: Icons.directions_run,
-                              hint: '0,0',
-                              suffix: '%',
-                              enabled: !_autoCalculateSegmental,
-                            ),
-                          ),
-                          const Expanded(child: SizedBox()), // Empty space for balance
-                        ],
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildNumberInputField(
+                          controller: _segMusArmsController,
+                          label: 'Arms (Kedua Lengan)',
+                          icon: Icons.sports_martial_arts,
+                          hint: '0,0',
+                          suffix: '%',
+                          enabled: !_autoCalculateSegmental,
+                        ),
                       ),
                     ],
                   );
@@ -1407,66 +1326,33 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                     children: [
                       _buildNumberInputField(
                         controller: _segMusTrunkController,
-                        label: 'Trunk',
+                        label: 'Trunk (Batang Tubuh)',
                         icon: Icons.airline_seat_recline_normal,
                         hint: '0,0',
                         suffix: '%',
                         enabled: !_autoCalculateSegmental,
                       ),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildNumberInputField(
-                              controller: _segMusRightArmController,
-                              label: 'Right Arm',
-                              icon: Icons.back_hand,
-                              hint: '0,0',
-                              suffix: '%',
-                              enabled: !_autoCalculateSegmental,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildNumberInputField(
-                              controller: _segMusLeftArmController,
-                              label: 'Left Arm',
-                              icon: Icons.front_hand,
-                              hint: '0,0',
-                              suffix: '%',
-                              enabled: !_autoCalculateSegmental,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildNumberInputField(
-                              controller: _segMusRightLegController,
-                              label: 'Right Leg',
-                              icon: Icons.directions_walk,
-                              hint: '0,0',
-                              suffix: '%',
-                              enabled: !_autoCalculateSegmental,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildNumberInputField(
-                              controller: _segMusLeftLegController,
-                              label: 'Left Leg',
-                              icon: Icons.directions_run,
-                              hint: '0,0',
-                              suffix: '%',
-                              enabled: !_autoCalculateSegmental,
-                            ),
-                          ),
-                        ],
+                      _buildNumberInputField(
+                        controller: _segMusArmsController,
+                        label: 'Arms (Kedua Lengan)',
+                        icon: Icons.sports_martial_arts,
+                        hint: '0,0',
+                        suffix: '%',
+                        enabled: !_autoCalculateSegmental,
                       ),
                     ],
                   );
                 }
               },
+            ),
+            
+            _buildNumberInputField(
+              controller: _segMusLegsController,
+              label: 'Legs (Kedua Kaki)',
+              icon: Icons.directions_walk,
+              hint: '0,0',
+              suffix: '%',
+              enabled: !_autoCalculateSegmental,
             ),
           ],
         ),
@@ -1478,10 +1364,10 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
     required TextEditingController controller,
     required String label,
     required IconData icon,
-    String? hint,
-    String? suffix,
-    bool isInteger = false,
+    String hint = '',
+    String suffix = '',
     bool enabled = true,
+    bool isInteger = false,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -1493,39 +1379,42 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
           if (isInteger)
             FilteringTextInputFormatter.digitsOnly
           else
-            // UPDATED: SUPPORT KOMA DAN TITIK UNTUK DECIMAL
-            FilteringTextInputFormatter.allow(RegExp(r'^\d*[.,]?\d*')),
+            FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
         ],
         decoration: InputDecoration(
           labelText: label,
           hintText: hint,
+          suffixText: suffix.isNotEmpty ? suffix : null,
           prefixIcon: Icon(icon, color: enabled ? Colors.orange[700] : Colors.grey),
-          suffixText: suffix,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Colors.grey[300]!),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
             borderSide: BorderSide(color: Colors.orange[700]!, width: 2),
           ),
+          disabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Colors.grey[200]!),
+          ),
           filled: true,
-          fillColor: enabled ? Colors.white : Colors.grey[100],
+          fillColor: enabled ? Colors.white : Colors.grey[50],
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         ),
         validator: (value) {
-          if (value == null || value.isEmpty) {
+          if (value == null || value.trim().isEmpty) {
             return 'Field ini wajib diisi';
           }
-          if (isInteger) {
-            if (int.tryParse(value) == null) {
-              return 'Masukkan angka yang valid';
-            }
-          } else {
-            // UPDATED: VALIDATION SUPPORT KOMA
-            final normalizedValue = value.replaceAll(',', '.');
-            if (double.tryParse(normalizedValue) == null) {
-              return 'Masukkan angka yang valid (gunakan koma atau titik untuk desimal)';
-            }
+          
+          final numValue = OmronData.parseDecimalInput(value);
+          if (numValue <= 0) {
+            return 'Nilai harus lebih dari 0';
           }
+          
           return null;
         },
       ),
@@ -1533,29 +1422,30 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
   }
 
   Widget _buildCalculateButton() {
-    return SizedBox(
+    return Container(
       width: double.infinity,
-      height: 56,
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: ElevatedButton.icon(
         onPressed: _isLoading ? null : _calculateResult,
-        icon: _isLoading
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
-            : const Icon(Icons.calculate, size: 24),
+        icon: _isLoading 
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            )
+          : const Icon(Icons.calculate, size: 24),
         label: Text(
-          _isLoading ? 'Menghitung...' : 'Hitung & Analisis (11 Fitur)',
+          _isLoading ? 'Menghitung Analisis...' : 'Hitung Analisis Lengkap (11 Fitur)',
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.orange[700],
           foregroundColor: Colors.white,
-          elevation: 4,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          elevation: _isLoading ? 2 : 6,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -1564,6 +1454,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
     );
   }
 
+  // UPDATED: Calculate result dengan struktur segmental baru
   Future<void> _calculateResult() async {
     if (!_formKey.currentState!.validate()) {
       _scrollToFirstError();
@@ -1572,35 +1463,44 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
 
     setState(() {
       _isLoading = true;
-      _calculatedResult = null; // Clear previous result
     });
 
     try {
-      // Simulate processing time
-      await Future.delayed(const Duration(milliseconds: 1000));
+      // Parse all input values
+      final age = int.tryParse(_ageController.text) ?? 0;
+      final height = OmronData.parseDecimalInput(_heightController.text);
+      final weight = OmronData.parseDecimalInput(_weightController.text);
+      final bodyFat = OmronData.parseDecimalInput(_bodyFatController.text);
+      final bmi = OmronData.parseDecimalInput(_bmiController.text);
+      final skeletalMuscle = OmronData.parseDecimalInput(_skeletalMuscleController.text);
+      final visceralFat = OmronData.parseDecimalInput(_visceralFatController.text);
+      final restingMetabolism = int.tryParse(_restingMetabolismController.text) ?? 0;
+      final bodyAge = int.tryParse(_bodyAgeController.text) ?? 0;
+      final subcutaneousFat = OmronData.parseDecimalInput(_subcutaneousFatController.text);
 
-      // Get segmental data with decimal parsing
+      // Get segmental data with NEW STRUCTURE
       Map<String, double> segmentalSubcutaneous = {
+        'wholeBody': OmronData.parseDecimalInput(_segSubWholeBodyController.text),
         'trunk': OmronData.parseDecimalInput(_segSubTrunkController.text),
-        'rightArm': OmronData.parseDecimalInput(_segSubRightArmController.text),
-        'leftArm': OmronData.parseDecimalInput(_segSubLeftArmController.text),
-        'rightLeg': OmronData.parseDecimalInput(_segSubRightLegController.text),
-        'leftLeg': OmronData.parseDecimalInput(_segSubLeftLegController.text),
+        'arms': OmronData.parseDecimalInput(_segSubArmsController.text),
+        'legs': OmronData.parseDecimalInput(_segSubLegsController.text),
       };
 
       Map<String, double> segmentalSkeletal = {
+        'wholeBody': OmronData.parseDecimalInput(_segMusWholeBodyController.text),
         'trunk': OmronData.parseDecimalInput(_segMusTrunkController.text),
-        'rightArm': OmronData.parseDecimalInput(_segMusRightArmController.text),
-        'leftArm': OmronData.parseDecimalInput(_segMusLeftArmController.text),
-        'rightLeg': OmronData.parseDecimalInput(_segMusRightLegController.text),
-        'leftLeg': OmronData.parseDecimalInput(_segMusLeftLegController.text),
+        'arms': OmronData.parseDecimalInput(_segMusArmsController.text),
+        'legs': OmronData.parseDecimalInput(_segMusLegsController.text),
       };
 
       // Calculate same age comparison
-      final bodyFat = OmronData.parseDecimalInput(_bodyFatController.text);
-      final age = int.parse(_ageController.text);
-      final sameAgeComparison = OmronData.calculateSameAgeComparison(bodyFat, age, _selectedGender);
+      final sameAgeComparison = OmronData.calculateSameAgeComparison(
+        bodyFat, 
+        age, 
+        _selectedGender,
+      );
 
+      // Create OmronData object
       final omronData = OmronData(
         timestamp: DateTime.now(),
         patientName: _patientNameController.text.trim(),
@@ -1609,72 +1509,109 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
           : _whatsappController.text.trim(),
         age: age,
         gender: _selectedGender,
-        height: OmronData.parseDecimalInput(_heightController.text),
-        weight: OmronData.parseDecimalInput(_weightController.text),
+        height: height,
+        weight: weight,
         bodyFatPercentage: bodyFat,
-        bmi: OmronData.parseDecimalInput(_bmiController.text),
-        skeletalMusclePercentage: OmronData.parseDecimalInput(_skeletalMuscleController.text),
-        visceralFatLevel: OmronData.parseDecimalInput(_visceralFatController.text), // SEKARANG SUPPORT DECIMAL
-        restingMetabolism: int.parse(_restingMetabolismController.text),
-        bodyAge: int.parse(_bodyAgeController.text),
-        subcutaneousFatPercentage: OmronData.parseDecimalInput(_subcutaneousFatController.text),
+        bmi: bmi,
+        skeletalMusclePercentage: skeletalMuscle,
+        visceralFatLevel: visceralFat,
+        restingMetabolism: restingMetabolism,
+        bodyAge: bodyAge,
+        subcutaneousFatPercentage: subcutaneousFat,
         segmentalSubcutaneousFat: segmentalSubcutaneous,
         segmentalSkeletalMuscle: segmentalSkeletal,
         sameAgeComparison: sameAgeComparison,
       );
 
-      // Set result dengan setState yang aman
+      setState(() {
+        _calculatedResult = omronData;
+        _isLoading = false;
+      });
+
+      // FITUR 3: AUTO SAVE setelah 3 detik
+      _startAutoSaveTimer();
+
+      // Scroll to result (untuk mobile)
+      if (MediaQuery.of(context).size.width <= 800) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 800),
+          curve: Curves.easeInOut,
+        );
+      }
+
+      // Show success snackbar
       if (mounted) {
-        setState(() {
-          _calculatedResult = omronData;
-          _isLoading = false;
-        });
-
-        // FITUR 2: RESET FORM LANGSUNG SETELAH PERHITUNGAN SELESAI
-        _clearFormAfterCalculation();
-
-        // Scroll dengan delay untuk memastikan widget sudah ter-render
-        Future.delayed(const Duration(milliseconds: 500), () {
-          if (mounted && MediaQuery.of(context).size.width <= 1200) {
-            _scrollController.animateTo(
-              _scrollController.position.maxScrollExtent,
-              duration: const Duration(milliseconds: 500),
-              curve: Curves.easeInOut,
-            );
-          }
-        });
-
-        // SUCCESS MESSAGE
-        final hasWhatsApp = omronData.whatsappNumber != null && omronData.whatsappNumber!.isNotEmpty;
-        String successMessage = '✅ Analisis berhasil! Form telah direset untuk input baru. ';
-        
-        if (hasWhatsApp) {
-          successMessage += 'Nomor WhatsApp tersimpan: ${omronData.whatsappNumber}. ';
-        }
-        
-        successMessage += 'Data akan otomatis tersimpan dalam 3 detik.';
-        
-        _showSuccessSnackBar(successMessage);
-
-        // FITUR 3: AUTO SAVE SETELAH 3 DETIK
-        _startAutoSaveCountdown();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Analisis berhasil! Data akan tersimpan otomatis dalam 3 detik',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green[600],
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
       }
 
     } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _calculatedResult = null;
-        });
-        _showErrorSnackBar('Terjadi kesalahan saat menghitung: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text('Terjadi kesalahan: ${e.toString()}'),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red[600],
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
       }
     }
   }
 
-  // FITUR 3: AUTO SAVE FUNCTIONALITY
-  void _startAutoSaveCountdown() {
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted && _calculatedResult != null) {
+  void _scrollToFirstError() {
+    // Scroll to the first error field
+    _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  // FITUR 3: AUTO SAVE TIMER
+  Timer? _autoSaveTimer;
+  
+  void _startAutoSaveTimer() {
+    _autoSaveTimer?.cancel();
+    _autoSaveTimer = Timer(const Duration(seconds: 3), () {
+      if (_calculatedResult != null && mounted) {
         _saveDataAutomatically();
       }
     });
@@ -1682,80 +1619,140 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
 
   Future<void> _saveDataAutomatically() async {
     if (_calculatedResult == null) return;
-
+    
     try {
-      setState(() {
-        _isLoading = true;
-      });
-
-      final id = await _databaseService.insertOmronData(_calculatedResult!);
+      await _databaseService.insertOmronData(_calculatedResult!);
       
-      setState(() {
-        _isLoading = false;
-      });
-
-      // SUCCESS MESSAGE
-      final hasWhatsApp = _calculatedResult!.whatsappNumber != null && _calculatedResult!.whatsappNumber!.isNotEmpty;
-      String successMessage = '✅ Data otomatis tersimpan dengan ID: $id';
-      
-      if (hasWhatsApp) {
-        successMessage += ' (dengan nomor WhatsApp)';
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.save_alt, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '✅ Data tersimpan otomatis untuk ${_calculatedResult!.patientName}',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green[700],
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
       }
-
-      _showSuccessSnackBar(successMessage);
       
-      // Show auto save success dialog
-      _showAutoSaveSuccessDialog();
+      // Reset form setelah auto save
+      await Future.delayed(const Duration(seconds: 1));
+      if (mounted) {
+        _resetForm();
+      }
       
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      _showErrorSnackBar('Gagal menyimpan otomatis: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text('Auto save gagal: ${e.toString()}'),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red[600],
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+      }
     }
   }
 
   Future<void> _saveDataManually() async {
-    if (_calculatedResult == null) {
-      _showErrorSnackBar('Tidak ada data untuk disimpan. Silakan hitung terlebih dahulu.');
-      return;
-    }
-
+    if (_calculatedResult == null) return;
+    
+    setState(() {
+      _isLoading = true;
+    });
+    
     try {
-      setState(() {
-        _isLoading = true;
-      });
-
-      final id = await _databaseService.insertOmronData(_calculatedResult!);
+      // Cancel auto save timer jika ada
+      _autoSaveTimer?.cancel();
       
-      setState(() {
-        _isLoading = false;
-      });
-
-      // SUCCESS MESSAGE
-      final hasWhatsApp = _calculatedResult!.whatsappNumber != null && _calculatedResult!.whatsappNumber!.isNotEmpty;
-      String successMessage = '✅ Data manual tersimpan dengan ID: $id';
+      await _databaseService.insertOmronData(_calculatedResult!);
       
-      if (hasWhatsApp) {
-        successMessage += ' (dengan nomor WhatsApp)';
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.save, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '✅ Data berhasil disimpan untuk ${_calculatedResult!.patientName}',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green[700],
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
       }
-
-      _showSuccessSnackBar(successMessage);
       
-      // Show manual save success dialog
-      _showManualSaveSuccessDialog();
+      // Reset form
+      _resetForm();
       
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      _showErrorSnackBar('Gagal menyimpan data: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text('Gagal menyimpan: ${e.toString()}'),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red[600],
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
-  // FITUR 2: RESET FORM LANGSUNG SETELAH PERHITUNGAN SELESAI
-  void _clearFormAfterCalculation() {
-    // Clear all form controllers tapi JANGAN hapus _calculatedResult
+  void _resetForm() {
+    // Clear all controllers
     _patientNameController.clear();
     _whatsappController.clear();
     _ageController.clear();
@@ -1769,373 +1766,89 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
     _bodyAgeController.clear();
     _subcutaneousFatController.clear();
     
-    // Clear segmental controllers
+    // Clear segmental controllers - NEW STRUCTURE
+    _segSubWholeBodyController.clear();
     _segSubTrunkController.clear();
-    _segSubRightArmController.clear();
-    _segSubLeftArmController.clear();
-    _segSubRightLegController.clear();
-    _segSubLeftLegController.clear();
-    
+    _segSubArmsController.clear();
+    _segSubLegsController.clear();
+    _segMusWholeBodyController.clear();
     _segMusTrunkController.clear();
-    _segMusRightArmController.clear();
-    _segMusLeftArmController.clear();
-    _segMusRightLegController.clear();
-    _segMusLeftLegController.clear();
-
-    // Reset gender selection ke default
+    _segMusArmsController.clear();
+    _segMusLegsController.clear();
+    
+    // Reset state
     setState(() {
       _selectedGender = 'Male';
-      // JANGAN reset _calculatedResult dan _isLoading di sini
-    });
-
-    // Show reset notification
-    Future.delayed(const Duration(milliseconds: 200), () {
-      if (mounted) {
-        _showInfoSnackBar('📝 Form siap untuk input data pasien berikutnya');
-      }
-    });
-  }
-
-  void _showAutoSaveSuccessDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          icon: Icon(Icons.schedule_send, color: Colors.green, size: 48),
-          title: const Text('Data Otomatis Tersimpan! ⚡'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('Data Omron HBF-375 berhasil disimpan secara otomatis! (11/11 Fitur)'),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.green[50],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.green[200]!),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Pasien: ${_calculatedResult!.patientName}',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      'Tanggal: ${DateFormat('dd/MM/yyyy HH:mm').format(_calculatedResult!.timestamp)}',
-                      style: TextStyle(color: Colors.grey[600]),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '⚡ Data tersimpan otomatis dalam 3 detik',
-                      style: TextStyle(color: Colors.green[700], fontSize: 12),
-                    ),
-                    if (_calculatedResult!.whatsappNumber != null && _calculatedResult!.whatsappNumber!.isNotEmpty) ...[
-                      Text(
-                        '📱 Nomor WhatsApp: ${_calculatedResult!.whatsappNumber}',
-                        style: TextStyle(color: Colors.green[700], fontSize: 12),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _clearResultAndPrepareNewInput(); // Method baru untuk clear result saja
-              },
-              child: const Text('Input Baru'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                Navigator.pushNamed(context, '/history');
-              },
-              child: const Text('Lihat Riwayat'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green[700],
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('OK'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showManualSaveSuccessDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          icon: Icon(Icons.check_circle, color: Colors.green, size: 48),
-          title: const Text('Data Tersimpan! 👍'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('Data Omron HBF-375 berhasil disimpan secara manual! (11/11 Fitur)'),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.green[50],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.green[200]!),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Pasien: ${_calculatedResult!.patientName}',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      'Tanggal: ${DateFormat('dd/MM/yyyy HH:mm').format(_calculatedResult!.timestamp)}',
-                      style: TextStyle(color: Colors.grey[600]),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '✅ Data tersimpan manual oleh pengguna',
-                      style: TextStyle(color: Colors.green[700], fontSize: 12),
-                    ),
-                    if (_calculatedResult!.whatsappNumber != null && _calculatedResult!.whatsappNumber!.isNotEmpty) ...[
-                      Text(
-                        '📱 Nomor WhatsApp: ${_calculatedResult!.whatsappNumber}',
-                        style: TextStyle(color: Colors.green[700], fontSize: 12),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _clearResultAndPrepareNewInput(); // Method baru untuk clear result saja
-              },
-              child: const Text('Input Baru'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                Navigator.pushNamed(context, '/history');
-              },
-              child: const Text('Lihat Riwayat'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green[700],
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('OK'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  // Method baru untuk clear result dan prepare input baru setelah save
-  void _clearResultAndPrepareNewInput() {
-    setState(() {
       _calculatedResult = null;
-      _isLoading = false;
+      _autoCalculateBMI = true;
+      _autoCalculateSegmental = true;
     });
-
-    // Scroll back to top
+    
+    // Scroll to top
     _scrollController.animateTo(
       0,
       duration: const Duration(milliseconds: 500),
       curve: Curves.easeInOut,
-    );
-
-    // Show notification
-    _showInfoSnackBar('🆕 Siap untuk analisis pasien baru');
-  }
-
-  void _showInfoSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.info, color: Colors.white),
-            const SizedBox(width: 8),
-            Expanded(child: Text(message)),
-          ],
-        ),
-        backgroundColor: Colors.blue[700],
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-        duration: const Duration(seconds: 2),
-      ),
     );
   }
 
   void _showResultDialog() {
     if (_calculatedResult == null) return;
-
+    
     showDialog(
       context: context,
       barrierDismissible: true,
-      builder: (context) {
+      builder: (BuildContext context) {
         return Dialog(
           insetPadding: const EdgeInsets.all(16),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              // Responsive dialog sizing
-              double dialogWidth = constraints.maxWidth > 1200 
-                  ? constraints.maxWidth * 0.7
-                  : constraints.maxWidth > 800 
-                      ? constraints.maxWidth * 0.85
-                      : constraints.maxWidth * 0.95;
-              
-              double dialogHeight = constraints.maxHeight * 0.9;
-
-              return Container(
-                width: dialogWidth,
-                height: dialogHeight,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: Colors.white,
-                ),
-                child: Column(
+          child: Container(
+            width: MediaQuery.of(context).size.width * 0.95,
+            height: MediaQuery.of(context).size.height * 0.9,
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                // Header
+                Row(
                   children: [
-                    // Header
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.orange[700],
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(12),
-                          topRight: Radius.circular(12),
+                    Icon(Icons.fullscreen, color: Colors.orange[700]),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Hasil Analisis Lengkap',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orange[700],
                         ),
                       ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.analytics, color: Colors.white, size: 24),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Hasil Analisis - ${_calculatedResult!.patientName}',
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                if (_calculatedResult!.whatsappNumber != null && _calculatedResult!.whatsappNumber!.isNotEmpty) ...[
-                                  const SizedBox(height: 2),
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.chat, color: Colors.white70, size: 14),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        'WA: ${_calculatedResult!.whatsappNumber}',
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.white70,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: () => Navigator.pop(context),
-                            icon: const Icon(Icons.close, color: Colors.white),
-                          ),
-                        ],
-                      ),
                     ),
-                    // Content
-                    Expanded(
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        child: _buildSafeResultCard(),
-                      ),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close),
+                      tooltip: 'Tutup',
                     ),
                   ],
                 ),
-              );
-            },
+                const Divider(),
+                // Content
+                Expanded(
+                  child: OmronResultCard(data: _calculatedResult!),
+                ),
+              ],
+            ),
           ),
         );
       },
     );
   }
 
-  void _scrollToFirstError() {
-    // Find first error and scroll to it
-    _scrollController.animateTo(
-      0,
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.easeInOut,
-    );
-  }
-
-  void _showSuccessSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle, color: Colors.white),
-            const SizedBox(width: 8),
-            Expanded(child: Text(message)),
-          ],
-        ),
-        backgroundColor: Colors.green[700],
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-        duration: const Duration(seconds: 4),
-      ),
-    );
-  }
-
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.error, color: Colors.white),
-            const SizedBox(width: 8),
-            Expanded(child: Text(message)),
-          ],
-        ),
-        backgroundColor: Colors.red[700],
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-        duration: const Duration(seconds: 3),
-      ),
-    );
-  }
-
   @override
   void dispose() {
-    // Dispose all controllers
+    // Cancel timer
+    _autoSaveTimer?.cancel();
+    
+    // Dispose controllers
+    _scrollController.dispose();
     _patientNameController.dispose();
     _whatsappController.dispose();
     _ageController.dispose();
@@ -2149,19 +1862,16 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
     _bodyAgeController.dispose();
     _subcutaneousFatController.dispose();
     
+    // Dispose segmental controllers - NEW STRUCTURE
+    _segSubWholeBodyController.dispose();
     _segSubTrunkController.dispose();
-    _segSubRightArmController.dispose();
-    _segSubLeftArmController.dispose();
-    _segSubRightLegController.dispose();
-    _segSubLeftLegController.dispose();
-    
+    _segSubArmsController.dispose();
+    _segSubLegsController.dispose();
+    _segMusWholeBodyController.dispose();
     _segMusTrunkController.dispose();
-    _segMusRightArmController.dispose();
-    _segMusLeftArmController.dispose();
-    _segMusRightLegController.dispose();
-    _segMusLeftLegController.dispose();
+    _segMusArmsController.dispose();
+    _segMusLegsController.dispose();
     
-    _scrollController.dispose();
     super.dispose();
   }
 }

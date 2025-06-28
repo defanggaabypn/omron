@@ -16,15 +16,15 @@ class OmronData {
   final int restingMetabolism;
   final int bodyAge;
   
-  // Fitur tambahan yang belum ada
+  // Fitur tambahan yang belum ada - UPDATED STRUCTURE
   final double subcutaneousFatPercentage;
-  final Map<String, double> segmentalSubcutaneousFat;
-  final Map<String, double> segmentalSkeletalMuscle;
+  final Map<String, double> segmentalSubcutaneousFat; // wholeBody, trunk, arms, legs
+  final Map<String, double> segmentalSkeletalMuscle;  // wholeBody, trunk, arms, legs
   final double sameAgeComparison;
   
   // FIELD BARU: Status pengiriman WhatsApp
   final bool isWhatsAppSent;
-  final DateTime? whatsappSentAt; // Timestamp kapan dikirim
+  final DateTime? whatsappSentAt;
   
   // Additional calculated fields
   final String bmiCategory;
@@ -51,14 +51,13 @@ class OmronData {
     required this.segmentalSubcutaneousFat,
     required this.segmentalSkeletalMuscle,
     required this.sameAgeComparison,
-    this.isWhatsAppSent = false, // DEFAULT FALSE
-    this.whatsappSentAt, // FIELD BARU
+    this.isWhatsAppSent = false,
+    this.whatsappSentAt,
   }) : bmiCategory = _getBMICategory(bmi),
        bodyFatCategory = _getBodyFatCategory(bodyFatPercentage, gender),
        overallAssessment = _getOverallAssessment(bmi, bodyFatPercentage, visceralFatLevel),
        sameAgeCategory = _getSameAgeCategory(sameAgeComparison);
 
-  // [Semua method static tetap sama...]
   static String _getBMICategory(double bmi) {
     if (bmi < 18.5) return 'Underweight';
     if (bmi < 25.0) return 'Normal';
@@ -108,15 +107,16 @@ class OmronData {
     return 'Needs Improvement';
   }
 
-  // Helper methods tetap sama...
+  // UPDATED: Helper methods dengan struktur baru
   String get segmentalSubcutaneousFatJson {
-    return '{"trunk": ${segmentalSubcutaneousFat['trunk']}, "rightArm": ${segmentalSubcutaneousFat['rightArm']}, "leftArm": ${segmentalSubcutaneousFat['leftArm']}, "rightLeg": ${segmentalSubcutaneousFat['rightLeg']}, "leftLeg": ${segmentalSubcutaneousFat['leftLeg']}}';
+    return '{"wholeBody": ${segmentalSubcutaneousFat['wholeBody']}, "trunk": ${segmentalSubcutaneousFat['trunk']}, "arms": ${segmentalSubcutaneousFat['arms']}, "legs": ${segmentalSubcutaneousFat['legs']}}';
   }
 
   String get segmentalSkeletalMuscleJson {
-    return '{"trunk": ${segmentalSkeletalMuscle['trunk']}, "rightArm": ${segmentalSkeletalMuscle['rightArm']}, "leftArm": ${segmentalSkeletalMuscle['leftArm']}, "rightLeg": ${segmentalSkeletalMuscle['rightLeg']}, "leftLeg": ${segmentalSkeletalMuscle['leftLeg']}}';
+    return '{"wholeBody": ${segmentalSkeletalMuscle['wholeBody']}, "trunk": ${segmentalSkeletalMuscle['trunk']}, "arms": ${segmentalSkeletalMuscle['arms']}, "legs": ${segmentalSkeletalMuscle['legs']}}';
   }
 
+  // UPDATED: Parse method dengan struktur baru
   static Map<String, double> _parseSegmentalData(String jsonString) {
     try {
       final cleanJson = jsonString.replaceAll(RegExp(r'[{}"]'), '');
@@ -129,14 +129,20 @@ class OmronData {
           result[keyValue[0]] = double.tryParse(keyValue[1]) ?? 0.0;
         }
       }
+      
+      // Ensure all required keys exist
+      if (!result.containsKey('wholeBody')) result['wholeBody'] = 0.0;
+      if (!result.containsKey('trunk')) result['trunk'] = 0.0;
+      if (!result.containsKey('arms')) result['arms'] = 0.0;
+      if (!result.containsKey('legs')) result['legs'] = 0.0;
+      
       return result;
     } catch (e) {
       return {
+        'wholeBody': 0.0,
         'trunk': 0.0,
-        'rightArm': 0.0,
-        'leftArm': 0.0,
-        'rightLeg': 0.0,
-        'leftLeg': 0.0,
+        'arms': 0.0,
+        'legs': 0.0,
       };
     }
   }
@@ -147,7 +153,6 @@ class OmronData {
     return double.tryParse(normalizedInput) ?? 0.0;
   }
 
-  // UPDATE: Convert to Map dengan field baru
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -168,12 +173,11 @@ class OmronData {
       'segmentalSubcutaneousFat': segmentalSubcutaneousFatJson,
       'segmentalSkeletalMuscle': segmentalSkeletalMuscleJson,
       'sameAgeComparison': sameAgeComparison,
-      'isWhatsAppSent': isWhatsAppSent ? 1 : 0, // SQLite boolean as integer
-      'whatsappSentAt': whatsappSentAt?.millisecondsSinceEpoch, // FIELD BARU
+      'isWhatsAppSent': isWhatsAppSent ? 1 : 0,
+      'whatsappSentAt': whatsappSentAt?.millisecondsSinceEpoch,
     };
   }
 
-  // UPDATE: Create from Map dengan field baru
   factory OmronData.fromMap(Map<String, dynamic> map) {
     return OmronData(
       id: map['id'],
@@ -191,17 +195,16 @@ class OmronData {
       restingMetabolism: map['restingMetabolism'],
       bodyAge: map['bodyAge'],
       subcutaneousFatPercentage: ((map['subcutaneousFatPercentage'] ?? 0.0) as num).toDouble(),
-      segmentalSubcutaneousFat: _parseSegmentalData(map['segmentalSubcutaneousFat'] ?? '{"trunk": 0.0, "rightArm": 0.0, "leftArm": 0.0, "rightLeg": 0.0, "leftLeg": 0.0}'),
-      segmentalSkeletalMuscle: _parseSegmentalData(map['segmentalSkeletalMuscle'] ?? '{"trunk": 0.0, "rightArm": 0.0, "leftArm": 0.0, "rightLeg": 0.0, "leftLeg": 0.0}'),
+      segmentalSubcutaneousFat: _parseSegmentalData(map['segmentalSubcutaneousFat'] ?? '{"wholeBody": 0.0, "trunk": 0.0, "arms": 0.0, "legs": 0.0}'),
+      segmentalSkeletalMuscle: _parseSegmentalData(map['segmentalSkeletalMuscle'] ?? '{"wholeBody": 0.0, "trunk": 0.0, "arms": 0.0, "legs": 0.0}'),
       sameAgeComparison: ((map['sameAgeComparison'] ?? 50.0) as num).toDouble(),
-      isWhatsAppSent: (map['isWhatsAppSent'] ?? 0) == 1, // FIELD BARU
+      isWhatsAppSent: (map['isWhatsAppSent'] ?? 0) == 1,
       whatsappSentAt: map['whatsappSentAt'] != null 
         ? DateTime.fromMillisecondsSinceEpoch(map['whatsappSentAt']) 
-        : null, // FIELD BARU
+        : null,
     );
   }
 
-  // UPDATE: Create copy dengan field baru
   OmronData copyWith({
     int? id,
     DateTime? timestamp,
@@ -221,8 +224,8 @@ class OmronData {
     Map<String, double>? segmentalSubcutaneousFat,
     Map<String, double>? segmentalSkeletalMuscle,
     double? sameAgeComparison,
-    bool? isWhatsAppSent, // PARAMETER BARU
-    DateTime? whatsappSentAt, // PARAMETER BARU
+    bool? isWhatsAppSent,
+    DateTime? whatsappSentAt,
   }) {
     return OmronData(
       id: id ?? this.id,
@@ -243,12 +246,11 @@ class OmronData {
       segmentalSubcutaneousFat: segmentalSubcutaneousFat ?? this.segmentalSubcutaneousFat,
       segmentalSkeletalMuscle: segmentalSkeletalMuscle ?? this.segmentalSkeletalMuscle,
       sameAgeComparison: sameAgeComparison ?? this.sameAgeComparison,
-      isWhatsAppSent: isWhatsAppSent ?? this.isWhatsAppSent, // COPYWITH SUPPORT
-      whatsappSentAt: whatsappSentAt ?? this.whatsappSentAt, // COPYWITH SUPPORT
+      isWhatsAppSent: isWhatsAppSent ?? this.isWhatsAppSent,
+      whatsappSentAt: whatsappSentAt ?? this.whatsappSentAt,
     );
   }
 
-  // METHOD BARU: Mark sebagai terkirim WhatsApp
   OmronData markAsWhatsAppSent() {
     return copyWith(
       isWhatsAppSent: true,
@@ -256,7 +258,6 @@ class OmronData {
     );
   }
 
-  // METHOD BARU: Reset status WhatsApp
   OmronData resetWhatsAppStatus() {
     return copyWith(
       isWhatsAppSent: false,
@@ -264,7 +265,6 @@ class OmronData {
     );
   }
 
-  // [Semua method lainnya tetap sama...]
   static double calculateSameAgeComparison(double bodyFat, int age, String gender) {
     Map<String, Map<String, List<double>>> referenceData = {
       'Male': {
@@ -299,23 +299,22 @@ class OmronData {
     return 95.0;
   }
 
+  // UPDATED: Calculation methods dengan struktur baru
   static Map<String, double> calculateSegmentalSubcutaneousFat(double totalBodyFat) {
     return {
+      'wholeBody': totalBodyFat,
       'trunk': totalBodyFat * 0.4,
-      'rightArm': totalBodyFat * 0.15,
-      'leftArm': totalBodyFat * 0.15,
-      'rightLeg': totalBodyFat * 0.15,
-      'leftLeg': totalBodyFat * 0.15,
+      'arms': totalBodyFat * 0.3,  // Gabungan kedua lengan
+      'legs': totalBodyFat * 0.3,  // Gabungan kedua kaki
     };
   }
 
   static Map<String, double> calculateSegmentalSkeletalMuscle(double totalMuscle) {
     return {
+      'wholeBody': totalMuscle,
       'trunk': totalMuscle * 0.35,
-      'rightArm': totalMuscle * 0.175,
-      'leftArm': totalMuscle * 0.175,
-      'rightLeg': totalMuscle * 0.15,
-      'leftLeg': totalMuscle * 0.15,
+      'arms': totalMuscle * 0.35,  // Gabungan kedua lengan
+      'legs': totalMuscle * 0.3,   // Gabungan kedua kaki
     };
   }
 }
