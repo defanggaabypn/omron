@@ -57,23 +57,29 @@ LSHC Omron App adalah aplikasi mobile yang memungkinkan input manual data dari p
 
 ```
 lib/
+├── main.dart                        # Entry point aplikasi
+│
 ├── models/
-│   └── omron_data.dart           # Model data Omron dengan 11 fitur
+│   └── omron_data.dart             # Model data Omron dengan 11 fitur
+│
 ├── services/
-│   ├── database_service.dart     # Service untuk SQLite operations
-│   ├── pdf_service.dart          # Service untuk generate PDF report
-│   └── whatsapp_direct_service.dart # Service untuk WhatsApp integration
+│   ├── database_service.dart       # Operasi SQLite
+│   ├── pdf_service.dart            # Generate laporan PDF
+│   └── whatsapp_direct_service.dart# Integrasi WhatsApp
+│
 ├── screens/
-│   ├── omron_input_screen.dart   # Screen input data manual
-│   ├── history_screen.dart       # Screen riwayat dan filter data
-│   └── analytics_screen.dart     # Screen statistik dan analisis
+│   ├── omron_input_screen.dart     # Input data manual
+│   ├── omron_edit_screen.dart      # Edit data yang sudah ada
+│   ├── history_screen.dart         # Riwayat dan filter data
+│   └── analytics_screen.dart       # Statistik dan analisis data
+│
 ├── widgets/
-│   ├── patient_info_card.dart    # Widget info pasien dengan WhatsApp
-│   ├── omron_result_card.dart    # Widget hasil analisis (4 tabs)
-│   ├── omron_history_card.dart   # Widget card untuk riwayat
-│   ├── filter_dialog.dart        # Widget dialog filter
-│   └── whatsapp_form_dialog.dart # Widget form WhatsApp
-└── main.dart                     # Entry point aplikasi
+│   ├── patient_info_card.dart      # Info pasien + WhatsApp button
+│   ├── omron_result_card.dart      # Hasil analisis (4 tab)
+│   ├── omron_history_card.dart     # Card riwayat hasil input
+│   ├── filter_dialog.dart          # Dialog filter riwayat
+│   └── whatsapp_form_dialog.dart   # Dialog kirim hasil via WhatsApp
+
 ```
 
 ## 🛠️ Teknologi yang Digunakan
