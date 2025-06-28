@@ -442,7 +442,7 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
                 Expanded(
                   child: _buildMeasurementTile(
                     'Visceral Fat',
-                    widget.data.visceralFatLevel.toStringAsFixed(1), // UPDATED: DECIMAL DISPLAY
+                    widget.data.visceralFatLevel.toStringAsFixed(1),
                     Icons.favorite,
                     Colors.pink,
                   ),
@@ -589,11 +589,12 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
     );
   }
 
+  // ✅ PERBAIKAN - Segmental Subcutaneous Fat dengan struktur baru
   Widget _buildSegmentalSubcutaneousFat() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+         Text(
           '🫁 Subcutaneous Fat per Segmen',
           style: TextStyle(
             fontSize: 15,
@@ -605,54 +606,31 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
         Column(
           children: [
             _buildSegmentalTile(
+              'Whole Body (Seluruh Tubuh)',
+              '${widget.data.segmentalSubcutaneousFat['wholeBody']!.toStringAsFixed(1)}%',
+              Icons.accessibility_new,
+              Colors.purple,
+            ),
+            const SizedBox(height: 4),
+            _buildSegmentalTile(
               'Trunk (Batang Tubuh)',
               '${widget.data.segmentalSubcutaneousFat['trunk']!.toStringAsFixed(1)}%',
               Icons.airline_seat_recline_normal,
               Colors.purple,
             ),
             const SizedBox(height: 4),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildSegmentalTile(
-                    'Right Arm',
-                    '${widget.data.segmentalSubcutaneousFat['rightArm']!.toStringAsFixed(1)}%',
-                    Icons.pan_tool,
-                    Colors.purple,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildSegmentalTile(
-                    'Left Arm',
-                    '${widget.data.segmentalSubcutaneousFat['leftArm']!.toStringAsFixed(1)}%',
-                    Icons.back_hand,
-                    Colors.purple,
-                  ),
-                ),
-              ],
+            _buildSegmentalTile(
+              'Arms (Kedua Lengan)',
+              '${widget.data.segmentalSubcutaneousFat['arms']!.toStringAsFixed(1)}%',
+              Icons.sports_martial_arts,
+              Colors.purple,
             ),
             const SizedBox(height: 4),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildSegmentalTile(
-                    'Right Leg',
-                    '${widget.data.segmentalSubcutaneousFat['rightLeg']!.toStringAsFixed(1)}%',
-                    Icons.directions_walk,
-                    Colors.purple,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildSegmentalTile(
-                    'Left Leg',
-                    '${widget.data.segmentalSubcutaneousFat['leftLeg']!.toStringAsFixed(1)}%',
-                    Icons.directions_run,
-                    Colors.purple,
-                  ),
-                ),
-              ],
+            _buildSegmentalTile(
+              'Legs (Kedua Kaki)',
+              '${widget.data.segmentalSubcutaneousFat['legs']!.toStringAsFixed(1)}%',
+              Icons.directions_walk,
+              Colors.purple,
             ),
           ],
         ),
@@ -660,6 +638,7 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
     );
   }
 
+  // ✅ PERBAIKAN - Segmental Skeletal Muscle dengan struktur baru
   Widget _buildSegmentalSkeletalMuscle() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -676,54 +655,31 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
         Column(
           children: [
             _buildSegmentalTile(
+              'Whole Body (Seluruh Tubuh)',
+              '${widget.data.segmentalSkeletalMuscle['wholeBody']!.toStringAsFixed(1)}%',
+              Icons.accessibility_new,
+              Colors.red,
+            ),
+            const SizedBox(height: 4),
+            _buildSegmentalTile(
               'Trunk (Batang Tubuh)',
               '${widget.data.segmentalSkeletalMuscle['trunk']!.toStringAsFixed(1)}%',
               Icons.airline_seat_recline_normal,
               Colors.red,
             ),
             const SizedBox(height: 4),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildSegmentalTile(
-                    'Right Arm',
-                    '${widget.data.segmentalSkeletalMuscle['rightArm']!.toStringAsFixed(1)}%',
-                    Icons.pan_tool,
-                    Colors.red,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildSegmentalTile(
-                    'Left Arm',
-                    '${widget.data.segmentalSkeletalMuscle['leftArm']!.toStringAsFixed(1)}%',
-                    Icons.back_hand,
-                    Colors.red,
-                  ),
-                ),
-              ],
+            _buildSegmentalTile(
+              'Arms (Kedua Lengan)',
+              '${widget.data.segmentalSkeletalMuscle['arms']!.toStringAsFixed(1)}%',
+              Icons.sports_martial_arts,
+              Colors.red,
             ),
             const SizedBox(height: 4),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildSegmentalTile(
-                    'Right Leg',
-                    '${widget.data.segmentalSkeletalMuscle['rightLeg']!.toStringAsFixed(1)}%',
-                    Icons.directions_walk,
-                    Colors.red,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildSegmentalTile(
-                    'Left Leg',
-                    '${widget.data.segmentalSkeletalMuscle['leftLeg']!.toStringAsFixed(1)}%',
-                    Icons.directions_run,
-                    Colors.red,
-                  ),
-                ),
-              ],
+            _buildSegmentalTile(
+              'Legs (Kedua Kaki)',
+              '${widget.data.segmentalSkeletalMuscle['legs']!.toStringAsFixed(1)}%',
+              Icons.directions_walk,
+              Colors.red,
             ),
           ],
         ),
@@ -957,9 +913,9 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
         ),
         _buildAnalysisItem(
           'Visceral Fat',
-          _getVisceralFatCategory(widget.data.visceralFatLevel), // UPDATED: DOUBLE PARAMETER
-          _getVisceralFatColor(widget.data.visceralFatLevel), // UPDATED: DOUBLE PARAMETER
-          _getVisceralFatDescription(widget.data.visceralFatLevel), // UPDATED: DOUBLE PARAMETER
+          _getVisceralFatCategory(widget.data.visceralFatLevel),
+          _getVisceralFatColor(widget.data.visceralFatLevel),
+          _getVisceralFatDescription(widget.data.visceralFatLevel),
         ),
       ],
     );
@@ -994,7 +950,7 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
     );
   }
 
-  Widget _buildSegmentalAnalysis() {
+    Widget _buildSegmentalAnalysis() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1239,7 +1195,7 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
       ));
     }
     
-    // Visceral fat recommendations - UPDATED: DOUBLE COMPARISON
+    // Visceral fat recommendations
     if (widget.data.visceralFatLevel > 9.0) {
       recommendations.add(_buildRecommendationItem(
         '❤️ Kurangi lemak visceral dengan diet seimbang',
@@ -1275,7 +1231,7 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
       ));
     }
     
-    // Segmental recommendations
+    // Segmental recommendations - ✅ PERBAIKAN menggunakan struktur baru
     final maxSegFat = widget.data.segmentalSubcutaneousFat.values.reduce((a, b) => a > b ? a : b);
     if (maxSegFat > 15) {
       recommendations.add(_buildRecommendationItem(
@@ -1365,7 +1321,7 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
     }
   }
 
-  // UPDATED: VISCERAL FAT METHODS FOR DOUBLE
+  // Visceral fat methods for double
   String _getVisceralFatCategory(double level) {
     if (level <= 9.0) return 'Normal';
     if (level <= 14.0) return 'High';
@@ -1435,10 +1391,11 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
     return 'Anda berada di 25% terbawah untuk usia Anda';
   }
 
+  // ✅ PERBAIKAN - Segmental analysis dengan struktur baru
   String _getSegmentalAnalysis() {
     final trunk = widget.data.segmentalSubcutaneousFat['trunk']!;
-    final arms = (widget.data.segmentalSubcutaneousFat['rightArm']! + widget.data.segmentalSubcutaneousFat['leftArm']!) / 2;
-    final legs = (widget.data.segmentalSubcutaneousFat['rightLeg']! + widget.data.segmentalSubcutaneousFat['leftLeg']!) / 2;
+    final arms = widget.data.segmentalSubcutaneousFat['arms']!;
+    final legs = widget.data.segmentalSubcutaneousFat['legs']!;
     
     String highestArea = 'trunk';
     double highestValue = trunk;
@@ -1585,7 +1542,7 @@ class OmronResultCardState extends State<OmronResultCard> with TickerProviderSta
   }
 }
 
-// Custom Painter untuk Body Map
+// ✅ PERBAIKAN - Custom Painter untuk Body Map dengan struktur baru
 class BodyMapPainter extends CustomPainter {
   final OmronData data;
 
@@ -1616,8 +1573,8 @@ class BodyMapPainter extends CustomPainter {
       paint,
     );
     
-    // Arms
-    paint.color = _getBodyPartColor(data.segmentalSubcutaneousFat['rightArm']!);
+    // Arms (gunakan nilai arms yang sudah digabung, bagi 2 untuk per lengan)
+    paint.color = _getBodyPartColor(data.segmentalSubcutaneousFat['arms']! / 2);
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         Rect.fromCenter(
@@ -1630,7 +1587,6 @@ class BodyMapPainter extends CustomPainter {
       paint,
     );
     
-    paint.color = _getBodyPartColor(data.segmentalSubcutaneousFat['leftArm']!);
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         Rect.fromCenter(
@@ -1643,8 +1599,8 @@ class BodyMapPainter extends CustomPainter {
       paint,
     );
     
-    // Legs
-    paint.color = _getBodyPartColor(data.segmentalSubcutaneousFat['rightLeg']!);
+    // Legs (gunakan nilai legs yang sudah digabung, bagi 2 untuk per kaki)
+    paint.color = _getBodyPartColor(data.segmentalSubcutaneousFat['legs']! / 2);
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         Rect.fromCenter(
@@ -1657,7 +1613,6 @@ class BodyMapPainter extends CustomPainter {
       paint,
     );
     
-    paint.color = _getBodyPartColor(data.segmentalSubcutaneousFat['leftLeg']!);
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         Rect.fromCenter(
@@ -1698,3 +1653,4 @@ class BodyMapPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
+ 

@@ -255,7 +255,7 @@ class _PatientInfoCardState extends State<PatientInfoCard> {
             
             const SizedBox(height: 16),
             
-            // Gender Selection
+            // Gender Selection - FIXED LAYOUT untuk mengatasi overflow
             Text(
               'Jenis Kelamin',
               style: TextStyle(
@@ -266,50 +266,140 @@ class _PatientInfoCardState extends State<PatientInfoCard> {
             ),
             const SizedBox(height: 8),
             
+            // FIXED: Gunakan layout yang lebih responsif
             Container(
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: widget.isEditing ? Colors.orange[300]! : Colors.grey[300]!, // ✅ Border berbeda saat edit
+                  color: widget.isEditing ? Colors.orange[300]! : Colors.grey[300]!,
                 ),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: RadioListTile<String>(
-                      title: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.male, color: Colors.blue[600], size: 20),
-                          const SizedBox(width: 4),
-                          const Text('Pria'),
-                        ],
+              child: IntrinsicHeight(
+                child: Row(
+                  children: [
+                    // Pria
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => widget.onGenderChanged('Male'),
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(8),
+                          bottomLeft: Radius.circular(8),
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: widget.selectedGender == 'Male' 
+                              ? (widget.isEditing ? Colors.orange[50] : Colors.blue[50])
+                              : Colors.transparent,
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(8),
+                              bottomLeft: Radius.circular(8),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Radio<String>(
+                                value: 'Male',
+                                groupValue: widget.selectedGender,
+                                onChanged: widget.onGenderChanged,
+                                activeColor: widget.isEditing ? Colors.orange[700] : Colors.blue[700],
+                                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                visualDensity: VisualDensity.compact,
+                              ),
+                              Icon(
+                                Icons.male, 
+                                color: widget.selectedGender == 'Male' 
+                                  ? (widget.isEditing ? Colors.orange[700] : Colors.blue[700])
+                                  : Colors.grey[600], 
+                                size: 18,
+                              ),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  'Pria',
+                                  style: TextStyle(
+                                    color: widget.selectedGender == 'Male' 
+                                      ? (widget.isEditing ? Colors.orange[700] : Colors.blue[700])
+                                      : Colors.grey[700],
+                                    fontWeight: widget.selectedGender == 'Male' 
+                                      ? FontWeight.w600 
+                                      : FontWeight.normal,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                      value: 'Male',
-                      groupValue: widget.selectedGender,
-                      onChanged: widget.onGenderChanged,
-                      activeColor: widget.isEditing ? Colors.orange[700] : Colors.blue[700], // ✅ Warna berbeda
-                      dense: true,
                     ),
-                  ),
-                  Expanded(
-                    child: RadioListTile<String>(
-                      title: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.female, color: Colors.pink[600], size: 20),
-                          const SizedBox(width: 4),
-                          const Text('Wanita'),
-                        ],
+                    
+                    // Divider
+                    Container(
+                      width: 1,
+                      color: Colors.grey[300],
+                    ),
+                    
+                    // Wanita
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => widget.onGenderChanged('Female'),
+                        borderRadius: const BorderRadius.only(
+                          topRight: Radius.circular(8),
+                          bottomRight: Radius.circular(8),
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: widget.selectedGender == 'Female' 
+                              ? (widget.isEditing ? Colors.orange[50] : Colors.pink[50])
+                              : Colors.transparent,
+                            borderRadius: const BorderRadius.only(
+                              topRight: Radius.circular(8),
+                              bottomRight: Radius.circular(8),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Radio<String>(
+                                value: 'Female',
+                                groupValue: widget.selectedGender,
+                                onChanged: widget.onGenderChanged,
+                                activeColor: widget.isEditing ? Colors.orange[700] : Colors.pink[700],
+                                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                visualDensity: VisualDensity.compact,
+                              ),
+                              Icon(
+                                Icons.female, 
+                                color: widget.selectedGender == 'Female' 
+                                  ? (widget.isEditing ? Colors.orange[700] : Colors.pink[700])
+                                  : Colors.grey[600], 
+                                size: 18,
+                              ),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  'Wanita',
+                                  style: TextStyle(
+                                    color: widget.selectedGender == 'Female' 
+                                      ? (widget.isEditing ? Colors.orange[700] : Colors.pink[700])
+                                      : Colors.grey[700],
+                                    fontWeight: widget.selectedGender == 'Female' 
+                                      ? FontWeight.w600 
+                                      : FontWeight.normal,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                      value: 'Female',
-                      groupValue: widget.selectedGender,
-                      onChanged: widget.onGenderChanged,
-                      activeColor: widget.isEditing ? Colors.orange[700] : Colors.pink[700], // ✅ Warna berbeda
-                      dense: true,
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
             

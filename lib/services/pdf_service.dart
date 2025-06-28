@@ -89,6 +89,9 @@ class PDFService {
                   _buildInfoRow('Jenis Kelamin', data.gender == 'Male' ? 'Pria' : 'Wanita'),
                   _buildInfoRow('Tinggi Badan', '${data.height.toStringAsFixed(0)} cm'),
                   _buildInfoRow('Tanggal Pengukuran', DateFormat('dd MMMM yyyy, HH:mm', 'id_ID').format(data.timestamp)),
+                  // TAMBAHKAN WHATSAPP JIKA ADA
+                  if (data.whatsappNumber?.isNotEmpty ?? false)
+                    _buildInfoRow('WhatsApp', data.whatsappNumber!),
                 ],
               ),
             ),
@@ -164,7 +167,7 @@ class PDFService {
                 _buildMeasurementRow('BMI', data.bmi.toStringAsFixed(1), data.bmiCategory, _getBMIDescription(data.bmiCategory)),
                 _buildMeasurementRow('Body Fat', '${data.bodyFatPercentage.toStringAsFixed(1)}%', data.bodyFatCategory, _getBodyFatDescription(data.bodyFatCategory)),
                 _buildMeasurementRow('Skeletal Muscle', '${data.skeletalMusclePercentage.toStringAsFixed(1)}%', _getSkeletalMuscleCategory(data.skeletalMusclePercentage), ''),
-                _buildMeasurementRow('Visceral Fat', data.visceralFatLevel.toString(), _getVisceralFatCategory(data.visceralFatLevel.toInt()), _getVisceralFatDescription(data.visceralFatLevel.toInt())),
+                _buildMeasurementRow('Visceral Fat', data.visceralFatLevel.toStringAsFixed(1), _getVisceralFatCategory(data.visceralFatLevel), _getVisceralFatDescription(data.visceralFatLevel)),
                 _buildMeasurementRow('Resting Metabolism', '${data.restingMetabolism} kcal', 'Normal', ''),
                 _buildMeasurementRow('Body Age', '${data.bodyAge} tahun', _getBodyAgeStatus(data.bodyAge, data.age), ''),
               ],
@@ -320,7 +323,7 @@ class PDFService {
             
             pw.SizedBox(height: 20),
             
-            // Subcutaneous Fat Segmental
+            // Subcutaneous Fat Segmental - FIXED STRUCTURE
             pw.Text(
               'DISTRIBUSI SUBCUTANEOUS FAT (%)',
               style: pw.TextStyle(
@@ -335,17 +338,16 @@ class PDFService {
               border: pw.TableBorder.all(color: PdfColors.grey400),
               children: [
                 _buildTableHeader(['Bagian Tubuh', 'Nilai (%)', 'Status']),
-                _buildSegmentalRow('Trunk (Batang Tubuh)', data.segmentalSubcutaneousFat['trunk']!),
-                _buildSegmentalRow('Right Arm (Lengan Kanan)', data.segmentalSubcutaneousFat['rightArm']!),
-                _buildSegmentalRow('Left Arm (Lengan Kiri)', data.segmentalSubcutaneousFat['leftArm']!),
-                _buildSegmentalRow('Right Leg (Kaki Kanan)', data.segmentalSubcutaneousFat['rightLeg']!),
-                _buildSegmentalRow('Left Leg (Kaki Kiri)', data.segmentalSubcutaneousFat['leftLeg']!),
+                _buildSegmentalRow('Whole Body (Seluruh Tubuh)', data.segmentalSubcutaneousFat['wholeBody'] ?? 0.0),
+                _buildSegmentalRow('Trunk (Batang Tubuh)', data.segmentalSubcutaneousFat['trunk'] ?? 0.0),
+                _buildSegmentalRow('Arms (Kedua Lengan)', data.segmentalSubcutaneousFat['arms'] ?? 0.0),
+                _buildSegmentalRow('Legs (Kedua Kaki)', data.segmentalSubcutaneousFat['legs'] ?? 0.0),
               ],
             ),
             
             pw.SizedBox(height: 20),
             
-            // Skeletal Muscle Segmental
+            // Skeletal Muscle Segmental - FIXED STRUCTURE
             pw.Text(
               'DISTRIBUSI SKELETAL MUSCLE (%)',
               style: pw.TextStyle(
@@ -360,11 +362,10 @@ class PDFService {
               border: pw.TableBorder.all(color: PdfColors.grey400),
               children: [
                 _buildTableHeader(['Bagian Tubuh', 'Nilai (%)', 'Status']),
-                _buildSegmentalRow('Trunk (Batang Tubuh)', data.segmentalSkeletalMuscle['trunk']!),
-                _buildSegmentalRow('Right Arm (Lengan Kanan)', data.segmentalSkeletalMuscle['rightArm']!),
-                _buildSegmentalRow('Left Arm (Lengan Kiri)', data.segmentalSkeletalMuscle['leftArm']!),
-                _buildSegmentalRow('Right Leg (Kaki Kanan)', data.segmentalSkeletalMuscle['rightLeg']!),
-                _buildSegmentalRow('Left Leg (Kaki Kiri)', data.segmentalSkeletalMuscle['leftLeg']!),
+                _buildSegmentalRow('Whole Body (Seluruh Tubuh)', data.segmentalSkeletalMuscle['wholeBody'] ?? 0.0),
+                _buildSegmentalRow('Trunk (Batang Tubuh)', data.segmentalSkeletalMuscle['trunk'] ?? 0.0),
+                _buildSegmentalRow('Arms (Kedua Lengan)', data.segmentalSkeletalMuscle['arms'] ?? 0.0),
+                _buildSegmentalRow('Legs (Kedua Kaki)', data.segmentalSkeletalMuscle['legs'] ?? 0.0),
               ],
             ),
             
@@ -681,15 +682,15 @@ class PDFService {
     return 'Sangat Tinggi';
   }
 
-  static String _getVisceralFatCategory(int level) {
-    if (level <= 9) return 'Normal';
-    if (level <= 14) return 'Tinggi';
+  static String _getVisceralFatCategory(double level) {
+    if (level <= 9.0) return 'Normal';
+    if (level <= 14.0) return 'Tinggi';
     return 'Sangat Tinggi';
   }
 
-  static String _getVisceralFatDescription(int level) {
-    if (level <= 9) return 'Dalam batas normal';
-    if (level <= 14) return 'Agak tinggi';
+  static String _getVisceralFatDescription(double level) {
+    if (level <= 9.0) return 'Dalam batas normal';
+    if (level <= 14.0) return 'Agak tinggi';
     return 'Sangat tinggi';
   }
 
@@ -730,11 +731,11 @@ class PDFService {
     return 'Sangat Tinggi';
   }
 
-  // Summary generators
+  // FIXED Summary generators dengan struktur baru
   static String _generateBasicSummary(OmronData data) {
     return 'Berdasarkan 7 indikator dasar Omron HBF-375, kondisi keseluruhan Anda dinilai ${data.overallAssessment}. '
            'BMI Anda ${data.bmi.toStringAsFixed(1)} termasuk kategori ${data.bmiCategory}, dengan persentase lemak tubuh ${data.bodyFatPercentage.toStringAsFixed(1)}% (${data.bodyFatCategory}). '
-           'Level lemak viseral Anda ${data.visceralFatLevel.toStringAsFixed(0)} (${_getVisceralFatCategory(data.visceralFatLevel.toInt())}).';
+           'Level lemak viseral Anda ${data.visceralFatLevel.toStringAsFixed(1)} (${_getVisceralFatCategory(data.visceralFatLevel)}).';
   }
 
   static String _generateAdvancedSummary(OmronData data) {
@@ -742,10 +743,11 @@ class PDFService {
            'Dibandingkan dengan orang seusia Anda, Anda berada di posisi ${data.sameAgeComparison.toStringAsFixed(0)} persentil (${data.sameAgeCategory}).';
   }
 
+  // FIXED Segmental analysis dengan struktur baru
   static String _generateSegmentalAnalysis(OmronData data) {
-    final trunk = data.segmentalSubcutaneousFat['trunk']!;
-    final arms = (data.segmentalSubcutaneousFat['rightArm']! + data.segmentalSubcutaneousFat['leftArm']!) / 2;
-    final legs = (data.segmentalSubcutaneousFat['rightLeg']! + data.segmentalSubcutaneousFat['leftLeg']!) / 2;
+    final trunk = data.segmentalSubcutaneousFat['trunk'] ?? 0.0;
+    final arms = data.segmentalSubcutaneousFat['arms'] ?? 0.0;
+    final legs = data.segmentalSubcutaneousFat['legs'] ?? 0.0;
     
     String highestArea = 'trunk';
     double highestValue = trunk;
@@ -760,9 +762,9 @@ class PDFService {
     }
     
     return 'Distribusi lemak subkutan menunjukkan konsentrasi tertinggi di area $highestArea (${highestValue.toStringAsFixed(1)}%). '
-           'Distribusi otot rangka relatif seimbang dengan trunk ${data.segmentalSkeletalMuscle['trunk']!.toStringAsFixed(1)}%, '
-           'lengan rata-rata ${((data.segmentalSkeletalMuscle['rightArm']! + data.segmentalSkeletalMuscle['leftArm']!) / 2).toStringAsFixed(1)}%, '
-           'dan kaki rata-rata ${((data.segmentalSkeletalMuscle['rightLeg']! + data.segmentalSkeletalMuscle['leftLeg']!) / 2).toStringAsFixed(1)}%.';
+           'Distribusi otot rangka relatif seimbang dengan trunk ${(data.segmentalSkeletalMuscle['trunk'] ?? 0.0).toStringAsFixed(1)}%, '
+           'lengan ${(data.segmentalSkeletalMuscle['arms'] ?? 0.0).toStringAsFixed(1)}%, '
+           'dan kaki ${(data.segmentalSkeletalMuscle['legs'] ?? 0.0).toStringAsFixed(1)}%.';
   }
 
   static List<String> _generateBasicRecommendations(OmronData data) {
@@ -780,7 +782,7 @@ class PDFService {
       recommendations.add('Fokus pada latihan kardio dan strength training untuk mengurangi lemak tubuh');
     }
     
-    if (data.visceralFatLevel > 9) {
+    if (data.visceralFatLevel > 9.0) {
       recommendations.add('Kurangi lemak visceral dengan diet seimbang rendah gula dan lemak jenuh');
     }
     
@@ -800,9 +802,13 @@ class PDFService {
       recommendations.add('Tingkatkan program fitness untuk menyamai atau melampaui teman sebaya');
     }
     
-    final maxSegFat = data.segmentalSubcutaneousFat.values.reduce((a, b) => a > b ? a : b);
-    if (maxSegFat > 15) {
-      recommendations.add('Fokus latihan pada area dengan lemak tinggi untuk hasil yang optimal');
+    // FIXED: Cari nilai maksimum segmental fat dengan null safety
+    final segmentalValues = data.segmentalSubcutaneousFat.values.where((v) => v != null);
+    if (segmentalValues.isNotEmpty) {
+      final maxSegFat = segmentalValues.reduce((a, b) => a > b ? a : b);
+      if (maxSegFat > 15) {
+        recommendations.add('Fokus latihan pada area dengan lemak tinggi untuk hasil yang optimal');
+      }
     }
     
     recommendations.add('Konsultasikan dengan ahli gizi untuk program diet dan latihan yang tepat');

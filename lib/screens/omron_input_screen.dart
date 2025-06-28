@@ -25,19 +25,15 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
   final _ageController = TextEditingController();
   final _heightController = TextEditingController();
   
-  // Basic Omron Data Controllers
+  // Basic Omron Data Controllers - UPDATED: Removed Skeletal Muscle
   final _weightController = TextEditingController();
   final _bodyFatController = TextEditingController();
   final _bmiController = TextEditingController();
-  final _skeletalMuscleController = TextEditingController();
   final _visceralFatController = TextEditingController();
   final _restingMetabolismController = TextEditingController();
   final _bodyAgeController = TextEditingController();
   
-  // New Additional Controllers
-  final _subcutaneousFatController = TextEditingController();
-  
-  // UPDATED: Segmental Controllers - NEW STRUCTURE (wholeBody, trunk, arms, legs)
+  // Segmental Controllers - NEW STRUCTURE (wholeBody, trunk, arms, legs)
   final _segSubWholeBodyController = TextEditingController();
   final _segSubTrunkController = TextEditingController();
   final _segSubArmsController = TextEditingController();
@@ -51,7 +47,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
   String _selectedGender = 'Male';
   bool _isLoading = false;
   bool _autoCalculateBMI = true;
-  bool _autoCalculateSegmental = true;
+  bool _autoCalculateSegmental = false; // CHANGED: Set to false so all fields can be manually input
   final bool _autoCalculateSameAge = true;
   OmronData? _calculatedResult;
 
@@ -67,8 +63,8 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
     _heightController.addListener(_calculateBMI);
     
     // Auto-calculate segmental data when main values change
-    _subcutaneousFatController.addListener(_calculateSegmentalData);
-    _skeletalMuscleController.addListener(_calculateSegmentalData);
+    _segSubWholeBodyController.addListener(_calculateSegmentalData);
+    _segMusWholeBodyController.addListener(_calculateSegmentalData);
 
     // Add listener for name formatting
     _patientNameController.addListener(_formatPatientName);
@@ -121,12 +117,11 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
   void _calculateSegmentalData() {
     if (!_autoCalculateSegmental) return;
     
-    final subcutaneousFat = OmronData.parseDecimalInput(_subcutaneousFatController.text);
-    final skeletalMuscle = OmronData.parseDecimalInput(_skeletalMuscleController.text);
+    final subcutaneousFat = OmronData.parseDecimalInput(_segSubWholeBodyController.text);
+    final skeletalMuscle = OmronData.parseDecimalInput(_segMusWholeBodyController.text);
     
     if (subcutaneousFat > 0) {
       final segmental = OmronData.calculateSegmentalSubcutaneousFat(subcutaneousFat);
-      _segSubWholeBodyController.text = segmental['wholeBody']!.toStringAsFixed(1);
       _segSubTrunkController.text = segmental['trunk']!.toStringAsFixed(1);
       _segSubArmsController.text = segmental['arms']!.toStringAsFixed(1);
       _segSubLegsController.text = segmental['legs']!.toStringAsFixed(1);
@@ -134,9 +129,8 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
     
     if (skeletalMuscle > 0) {
       final segmental = OmronData.calculateSegmentalSkeletalMuscle(skeletalMuscle);
-      _segMusWholeBodyController.text = segmental['wholeBody']!.toStringAsFixed(1);
       _segMusTrunkController.text = segmental['trunk']!.toStringAsFixed(1);
-            _segMusArmsController.text = segmental['arms']!.toStringAsFixed(1);
+      _segMusArmsController.text = segmental['arms']!.toStringAsFixed(1);
       _segMusLegsController.text = segmental['legs']!.toStringAsFixed(1);
     }
   }
@@ -234,8 +228,6 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                     ),
                     const SizedBox(height: 16),
                     _buildBasicOmronDataCard(),
-                    const SizedBox(height: 16),
-                    _buildAdditionalDataCard(),
                     const SizedBox(height: 16),
                     _buildSegmentalDataCard(),
                     const SizedBox(height: 16),
@@ -467,8 +459,6 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            _buildAdditionalDataCard(),
-            const SizedBox(height: 16),
             _buildSegmentalDataCard(),
             const SizedBox(height: 16),
             _buildCalculateButton(),
@@ -508,8 +498,6 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
             ),
             const SizedBox(height: 16),
             _buildBasicOmronDataCard(),
-            const SizedBox(height: 16),
-            _buildAdditionalDataCard(),
             const SizedBox(height: 16),
             _buildSegmentalDataCard(),
             const SizedBox(height: 16),
@@ -942,12 +930,6 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
               ],
             ),
             const SizedBox(width: 16),
-            const Expanded(child: SizedBox()), // Empty space
-          ],
-        ),
-        
-        Row(
-          children: [
             Expanded(
               child: _buildNumberInputField(
                 controller: _visceralFatController,
@@ -957,7 +939,11 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                 isInteger: false,
               ),
             ),
-            const SizedBox(width: 16),
+          ],
+        ),
+        
+        Row(
+          children: [
             Expanded(
               child: _buildNumberInputField(
                 controller: _restingMetabolismController,
@@ -968,11 +954,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                 isInteger: true,
               ),
             ),
-          ],
-        ),
-        
-        Row(
-          children: [
+            const SizedBox(width: 16),
             Expanded(
               child: _buildNumberInputField(
                 controller: _bodyAgeController,
@@ -983,7 +965,6 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                 isInteger: true,
               ),
             ),
-            const Expanded(child: SizedBox()), // Empty space for balance
           ],
         ),
       ],
@@ -1069,54 +1050,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
     );
   }
 
-  Widget _buildAdditionalDataCard() {
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.add_circle, color: Colors.blue[700]),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                                        'Data Tambahan Omron HBF-375',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue[700],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            
-            _buildNumberInputField(
-              controller: _skeletalMuscleController,
-              label: 'Skeletal Muscle Percentage (%)',
-              icon: Icons.fitness_center,
-              hint: 'Contoh: 35,2 atau 35.2',
-              suffix: '%',
-            ),
-            
-            _buildNumberInputField(
-              controller: _subcutaneousFatController,
-              label: 'Subcutaneous Fat Percentage (%)',
-              icon: Icons.layers,
-              hint: 'Contoh: 14,8 atau 14.8',
-              suffix: '%',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // UPDATED: Segmental data card dengan struktur baru (wholeBody, trunk, arms, legs)
+  // Segmental data card TANPA AUTO CALC BUTTON
   Widget _buildSegmentalDataCard() {
     return Card(
       elevation: 2,
@@ -1139,51 +1073,11 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                     ),
                   ),
                 ),
-                // Auto calculate toggle
-                Column(
-                  children: [
-                    const Text('Auto', style: TextStyle(fontSize: 12)),
-                    Switch(
-                      value: _autoCalculateSegmental,
-                      onChanged: (value) {
-                        setState(() {
-                          _autoCalculateSegmental = value;
-                          if (value) _calculateSegmentalData();
-                        });
-                      },
-                      activeColor: Colors.purple[700],
-                    ),
-                  ],
-                ),
+                // REMOVED: Auto calculate toggle button
               ],
             ),
             
-            if (_autoCalculateSegmental) ...[
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.purple[50],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.purple[200]!),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.info_outline, color: Colors.purple[700], size: 20),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Data segmental dihitung otomatis berdasarkan nilai total',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.purple[700],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            // REMOVED: Info container tentang auto calculate
             
             const SizedBox(height: 16),
             
@@ -1204,7 +1098,6 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
               icon: Icons.accessibility_new,
               hint: '0,0',
               suffix: '%',
-              enabled: !_autoCalculateSegmental,
             ),
             
             // Responsive layout for trunk and arms
@@ -1220,7 +1113,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                           icon: Icons.airline_seat_recline_normal,
                           hint: '0,0',
                           suffix: '%',
-                          enabled: !_autoCalculateSegmental,
+                          enabled: true, // FIXED: Always enabled for manual input
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -1231,7 +1124,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                           icon: Icons.sports_martial_arts,
                           hint: '0,0',
                           suffix: '%',
-                          enabled: !_autoCalculateSegmental,
+                          enabled: true, // FIXED: Always enabled for manual input
                         ),
                       ),
                     ],
@@ -1245,7 +1138,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                         icon: Icons.airline_seat_recline_normal,
                         hint: '0,0',
                         suffix: '%',
-                        enabled: !_autoCalculateSegmental,
+                        enabled: true, // FIXED: Always enabled for manual input
                       ),
                       _buildNumberInputField(
                         controller: _segSubArmsController,
@@ -1253,7 +1146,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                         icon: Icons.sports_martial_arts,
                         hint: '0,0',
                         suffix: '%',
-                        enabled: !_autoCalculateSegmental,
+                        enabled: true, // FIXED: Always enabled for manual input
                       ),
                     ],
                   );
@@ -1267,7 +1160,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
               icon: Icons.directions_walk,
               hint: '0,0',
               suffix: '%',
-              enabled: !_autoCalculateSegmental,
+              enabled: true, // FIXED: Always enabled for manual input
             ),
             
             const SizedBox(height: 24),
@@ -1289,7 +1182,6 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
               icon: Icons.accessibility_new,
               hint: '0,0',
               suffix: '%',
-              enabled: !_autoCalculateSegmental,
             ),
             
             // Responsive layout for trunk and arms
@@ -1305,7 +1197,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                           icon: Icons.airline_seat_recline_normal,
                           hint: '0,0',
                           suffix: '%',
-                          enabled: !_autoCalculateSegmental,
+                          enabled: true, // FIXED: Always enabled for manual input
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -1316,7 +1208,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                           icon: Icons.sports_martial_arts,
                           hint: '0,0',
                           suffix: '%',
-                          enabled: !_autoCalculateSegmental,
+                          enabled: true, // FIXED: Always enabled for manual input
                         ),
                       ),
                     ],
@@ -1330,7 +1222,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                         icon: Icons.airline_seat_recline_normal,
                         hint: '0,0',
                         suffix: '%',
-                        enabled: !_autoCalculateSegmental,
+                        enabled: true, // FIXED: Always enabled for manual input
                       ),
                       _buildNumberInputField(
                         controller: _segMusArmsController,
@@ -1338,7 +1230,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
                         icon: Icons.sports_martial_arts,
                         hint: '0,0',
                         suffix: '%',
-                        enabled: !_autoCalculateSegmental,
+                        enabled: true, // FIXED: Always enabled for manual input
                       ),
                     ],
                   );
@@ -1352,7 +1244,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
               icon: Icons.directions_walk,
               hint: '0,0',
               suffix: '%',
-              enabled: !_autoCalculateSegmental,
+              enabled: true, // FIXED: Always enabled for manual input
             ),
           ],
         ),
@@ -1454,7 +1346,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
     );
   }
 
-  // UPDATED: Calculate result dengan struktur segmental baru
+  // Calculate result dengan struktur segmental baru
   Future<void> _calculateResult() async {
     if (!_formKey.currentState!.validate()) {
       _scrollToFirstError();
@@ -1472,11 +1364,15 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
       final weight = OmronData.parseDecimalInput(_weightController.text);
       final bodyFat = OmronData.parseDecimalInput(_bodyFatController.text);
       final bmi = OmronData.parseDecimalInput(_bmiController.text);
-      final skeletalMuscle = OmronData.parseDecimalInput(_skeletalMuscleController.text);
       final visceralFat = OmronData.parseDecimalInput(_visceralFatController.text);
       final restingMetabolism = int.tryParse(_restingMetabolismController.text) ?? 0;
       final bodyAge = int.tryParse(_bodyAgeController.text) ?? 0;
-      final subcutaneousFat = OmronData.parseDecimalInput(_subcutaneousFatController.text);
+      
+      // Use subcutaneous fat from segmental whole body
+      final subcutaneousFat = OmronData.parseDecimalInput(_segSubWholeBodyController.text);
+      
+      // Use skeletal muscle from segmental whole body
+      final skeletalMuscle = OmronData.parseDecimalInput(_segMusWholeBodyController.text);
 
       // Get segmental data with NEW STRUCTURE
       Map<String, double> segmentalSubcutaneous = {
@@ -1760,11 +1656,9 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
     _weightController.clear();
     _bodyFatController.clear();
     _bmiController.clear();
-    _skeletalMuscleController.clear();
     _visceralFatController.clear();
     _restingMetabolismController.clear();
     _bodyAgeController.clear();
-    _subcutaneousFatController.clear();
     
     // Clear segmental controllers - NEW STRUCTURE
     _segSubWholeBodyController.clear();
@@ -1781,7 +1675,7 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
       _selectedGender = 'Male';
       _calculatedResult = null;
       _autoCalculateBMI = true;
-      _autoCalculateSegmental = true;
+      _autoCalculateSegmental = false; // FIXED: Keep it false so fields remain enabled
     });
     
     // Scroll to top
@@ -1856,11 +1750,9 @@ class _OmronInputScreenState extends State<OmronInputScreen> {
     _weightController.dispose();
     _bodyFatController.dispose();
     _bmiController.dispose();
-    _skeletalMuscleController.dispose();
     _visceralFatController.dispose();
     _restingMetabolismController.dispose();
     _bodyAgeController.dispose();
-    _subcutaneousFatController.dispose();
     
     // Dispose segmental controllers - NEW STRUCTURE
     _segSubWholeBodyController.dispose();
