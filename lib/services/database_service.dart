@@ -22,13 +22,14 @@ class DatabaseService {
     String path = join(await getDatabasesPath(), 'omron_hbf375.db');
     return await openDatabase(
       path,
-      version: 6, // NAIK VERSION UNTUK SEGMENTAL STRUCTURE BARU
+      version: 7, // NAIK VERSION UNTUK PATIENT TABLE
       onCreate: _createDatabase,
       onUpgrade: _upgradeDatabase,
     );
   }
 
   Future<void> _createDatabase(Database db, int version) async {
+    // Create omron_data table
     await db.execute('''
       CREATE TABLE omron_data (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -54,12 +55,34 @@ class DatabaseService {
       )
     ''');
 
-    // Create indexes for better performance
+    // Create patients table
+    await db.execute('''
+      CREATE TABLE patients (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nama TEXT NOT NULL,
+        whatsapp TEXT NOT NULL,
+        usia INTEGER NOT NULL,
+        gender TEXT NOT NULL,
+        tinggi REAL NOT NULL,
+        created_at INTEGER NOT NULL,
+        server_id TEXT,
+        is_synced INTEGER NOT NULL DEFAULT 0,
+        synced_at INTEGER
+      )
+    ''');
+
+    // Create indexes for omron_data
     await db.execute('CREATE INDEX idx_patient_name ON omron_data(patientName)');
     await db.execute('CREATE INDEX idx_timestamp ON omron_data(timestamp)');
     await db.execute('CREATE INDEX idx_patient_timestamp ON omron_data(patientName, timestamp)');
     await db.execute('CREATE INDEX idx_whatsapp ON omron_data(whatsappNumber)');
     await db.execute('CREATE INDEX idx_whatsapp_sent ON omron_data(isWhatsAppSent)');
+
+    // Create indexes for patients
+    await db.execute('CREATE INDEX idx_patient_nama ON patients(nama)');
+    await db.execute('CREATE INDEX idx_patient_whatsapp ON patients(whatsapp)');
+    await db.execute('CREATE INDEX idx_patient_server_id ON patients(server_id)');
+    await db.execute('CREATE INDEX idx_patient_synced ON patients(is_synced)');
   }
 
   Future<void> _upgradeDatabase(Database db, int oldVersion, int newVersion) async {
@@ -144,6 +167,30 @@ class DatabaseService {
         );
       }
     }
+
+    // Add patient table for version 7
+    if (oldVersion < 7) {
+      await db.execute('''
+        CREATE TABLE patients (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          nama TEXT NOT NULL,
+          whatsapp TEXT NOT NULL,
+          usia INTEGER NOT NULL,
+          gender TEXT NOT NULL,
+          tinggi REAL NOT NULL,
+          created_at INTEGER NOT NULL,
+          server_id TEXT,
+          is_synced INTEGER NOT NULL DEFAULT 0,
+          synced_at INTEGER
+        )
+      ''');
+
+      // Create indexes for patients
+      await db.execute('CREATE INDEX idx_patient_nama ON patients(nama)');
+      await db.execute('CREATE INDEX idx_patient_whatsapp ON patients(whatsapp)');
+      await db.execute('CREATE INDEX idx_patient_server_id ON patients(server_id)');
+      await db.execute('CREATE INDEX idx_patient_synced ON patients(is_synced)');
+    }
     
     // Create indexes if they don't exist
     await db.execute('CREATE INDEX IF NOT EXISTS idx_patient_name ON omron_data(patientName)');
@@ -185,6 +232,8 @@ class DatabaseService {
       return '{"wholeBody": 0.0, "trunk": 0.0, "arms": 0.0, "legs": 0.0}';
     }
   }
+
+  // ========== OMRON DATA METHODS (EXISTING) ==========
 
   // Insert new Omron data
   Future<int> insertOmronData(OmronData data) async {
@@ -635,7 +684,7 @@ class DatabaseService {
         'avgWeight': (stats['avg_weight'] as double?)?.toDouble() ?? 0.0,
         'avgBmi': (stats['avg_bmi'] as double?)?.toDouble() ?? 0.0,
         'avgBodyFat': (stats['avg_body_fat'] as double?)?.toDouble() ?? 0.0,
-        'avgMuscle': (stats['avg_muscle'] as double?)?.toDouble() ?? 0.0,
+                'avgMuscle': (stats['avg_muscle'] as double?)?.toDouble() ?? 0.0,
         'avgVisceralFat': (stats['avg_visceral_fat'] as double?)?.toDouble() ?? 0.0,
         'avgSubcutaneousFat': (stats['avg_subcutaneous_fat'] as double?)?.toDouble() ?? 0.0,
         'avgSameAgeComparison': (stats['avg_same_age_comparison'] as double?)?.toDouble() ?? 50.0,
@@ -878,4 +927,485 @@ class DatabaseService {
       _database = null;
     }
   }
+
+  // ========== PATIENT MANAGEMENT METHODS (NEW) ==========
+
+  // Insert patient from server
+  Future<int> insertPatient(Map<String, dynamic> patientData) async {
+    final db = await database;
+    
+    // Check if patient already exists by server_id or whatsapp
+    final existing = await db.query(
+      'patients',
+      where: 'server_id = ? OR whatsapp = ?',
+      whereArgs: [patientData['server_id'], patientData['whatsapp']],
+      limit: 1,
+    );
+    
+    if (existing.isNotEmpty) {
+      // Update existing patient
+      return await db.update(
+        'patients',
+        {
+          'nama': patientData['nama'],
+          'whatsapp': patientData['whatsapp'],
+          'usia': patientData['usia'],
+          'gender': patientData['gender'],
+          'tinggi': patientData['tinggi'],
+          'server_id': patientData['server_id'],
+          'is_synced': 1,
+          'synced_at': DateTime.now().millisecondsSinceEpoch,
+        },
+        where: 'id = ?',
+        whereArgs: [existing.first['id']],
+      );
+    } else {
+      // Insert new patient
+      return await db.insert('patients', {
+        'nama': patientData['nama'],
+        'whatsapp': patientData['whatsapp'],
+        'usia': patientData['usia'],
+        'gender': patientData['gender'],
+        'tinggi': patientData['tinggi'],
+        'created_at': DateTime.parse(patientData['created_at']).millisecondsSinceEpoch,
+        'server_id': patientData['server_id'],
+        'is_synced': 1,
+        'synced_at': DateTime.now().millisecondsSinceEpoch,
+      });
+    }
+  }
+
+  // Get all patients
+  Future<List<Map<String, dynamic>>> getAllPatients() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'patients',
+      orderBy: 'created_at DESC',
+    );
+
+    return maps.map((map) => {
+      'id': map['id'],
+      'nama': map['nama'],
+      'whatsapp': map['whatsapp'],
+      'usia': map['usia'],
+      'gender': map['gender'],
+      'tinggi': map['tinggi'],
+      'created_at': DateTime.fromMillisecondsSinceEpoch(map['created_at']),
+      'server_id': map['server_id'],
+      'is_synced': map['is_synced'] == 1,
+      'synced_at': map['synced_at'] != null 
+        ? DateTime.fromMillisecondsSinceEpoch(map['synced_at'])
+        : null,
+    }).toList();
+  }
+
+  // Get patients by sync status
+  Future<List<Map<String, dynamic>>> getPatientsBySyncStatus({required bool isSynced}) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'patients',
+      where: 'is_synced = ?',
+      whereArgs: [isSynced ? 1 : 0],
+      orderBy: 'created_at DESC',
+    );
+
+    return maps.map((map) => {
+      'id': map['id'],
+      'nama': map['nama'],
+      'whatsapp': map['whatsapp'],
+      'usia': map['usia'],
+      'gender': map['gender'],
+      'tinggi': map['tinggi'],
+      'created_at': DateTime.fromMillisecondsSinceEpoch(map['created_at']),
+      'server_id': map['server_id'],
+      'is_synced': map['is_synced'] == 1,
+      'synced_at': map['synced_at'] != null 
+        ? DateTime.fromMillisecondsSinceEpoch(map['synced_at'])
+        : null,
+    }).toList();
+  }
+
+  // Get patient by WhatsApp number
+  Future<Map<String, dynamic>?> getPatientByWhatsApp(String whatsapp) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'patients',
+      where: 'whatsapp = ?',
+      whereArgs: [whatsapp],
+      limit: 1,
+    );
+
+    if (maps.isNotEmpty) {
+      final map = maps.first;
+      return {
+        'id': map['id'],
+        'nama': map['nama'],
+        'whatsapp': map['whatsapp'],
+        'usia': map['usia'],
+        'gender': map['gender'],
+        'tinggi': map['tinggi'],
+        'created_at': DateTime.fromMillisecondsSinceEpoch(map['created_at']),
+        'server_id': map['server_id'],
+        'is_synced': map['is_synced'] == 1,
+        'synced_at': map['synced_at'] != null 
+          ? DateTime.fromMillisecondsSinceEpoch(map['synced_at'])
+          : null,
+      };
+    }
+    return null;
+  }
+
+  // Get patient by server ID
+  Future<Map<String, dynamic>?> getPatientByServerId(String serverId) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'patients',
+      where: 'server_id = ?',
+      whereArgs: [serverId],
+      limit: 1,
+    );
+
+    if (maps.isNotEmpty) {
+      final map = maps.first;
+      return {
+        'id': map['id'],
+        'nama': map['nama'],
+        'whatsapp': map['whatsapp'],
+        'usia': map['usia'],
+        'gender': map['gender'],
+        'tinggi': map['tinggi'],
+        'created_at': DateTime.fromMillisecondsSinceEpoch(map['created_at']),
+        'server_id': map['server_id'],
+        'is_synced': map['is_synced'] == 1,
+        'synced_at': map['synced_at'] != null 
+          ? DateTime.fromMillisecondsSinceEpoch(map['synced_at'])
+          : null,
+      };
+    }
+    return null;
+  }
+
+  // Batch insert patients from server
+  Future<int> batchInsertPatients(List<Map<String, dynamic>> patientsData) async {
+    final db = await database;
+    final batch = db.batch();
+    int insertedCount = 0;
+
+    for (final patientData in patientsData) {
+      // Check if patient already exists
+      final existing = await db.query(
+        'patients',
+        where: 'server_id = ? OR whatsapp = ?',
+        whereArgs: [patientData['server_id'], patientData['whatsapp']],
+        limit: 1,
+      );
+
+      if (existing.isEmpty) {
+        batch.insert('patients', {
+          'nama': patientData['nama'],
+          'whatsapp': patientData['whatsapp'],
+          'usia': patientData['usia'],
+          'gender': patientData['gender'],
+          'tinggi': patientData['tinggi'],
+          'created_at': DateTime.parse(patientData['created_at']).millisecondsSinceEpoch,
+          'server_id': patientData['server_id'],
+          'is_synced': 1,
+          'synced_at': DateTime.now().millisecondsSinceEpoch,
+        });
+        insertedCount++;
+      } else {
+        // Update existing
+        batch.update(
+          'patients',
+          {
+            'nama': patientData['nama'],
+            'whatsapp': patientData['whatsapp'],
+            'usia': patientData['usia'],
+            'gender': patientData['gender'],
+            'tinggi': patientData['tinggi'],
+            'server_id': patientData['server_id'],
+            'is_synced': 1,
+            'synced_at': DateTime.now().millisecondsSinceEpoch,
+          },
+          where: 'id = ?',
+          whereArgs: [existing.first['id']],
+        );
+      }
+    }
+
+    await batch.commit();
+    return insertedCount;
+  }
+
+  // Update patient sync status
+  Future<int> updatePatientSyncStatus(int patientId, {required bool isSynced}) async {
+    final db = await database;
+    return await db.update(
+      'patients',
+      {
+        'is_synced': isSynced ? 1 : 0,
+        'synced_at': isSynced ? DateTime.now().millisecondsSinceEpoch : null,
+      },
+      where: 'id = ?',
+      whereArgs: [patientId],
+    );
+  }
+
+  // Get sync statistics
+  Future<Map<String, dynamic>> getSyncStatistics() async {
+    final db = await database;
+    
+    final result = await db.rawQuery('''
+      SELECT 
+        COUNT(*) as total_patients,
+        SUM(CASE WHEN is_synced = 1 THEN 1 ELSE 0 END) as synced_patients,
+        SUM(CASE WHEN is_synced = 0 THEN 1 ELSE 0 END) as unsynced_patients,
+        MAX(synced_at) as last_sync
+      FROM patients
+    ''');
+
+    if (result.isNotEmpty) {
+      final stats = result.first;
+      return {
+        'totalPatients': stats['total_patients'] as int,
+        'syncedPatients': stats['synced_patients'] as int,
+        'unsyncedPatients': stats['unsynced_patients'] as int,
+        'lastSync': stats['last_sync'] != null 
+          ? DateTime.fromMillisecondsSinceEpoch(stats['last_sync'] as int)
+          : null,
+      };
+    }
+    
+    return {
+      'totalPatients': 0,
+      'syncedPatients': 0,
+      'unsyncedPatients': 0,
+      'lastSync': null,
+    };
+  }
+
+  // Search patients
+  Future<List<Map<String, dynamic>>> searchPatients({
+    String? nama,
+    String? whatsapp,
+    String? gender,
+    int? minAge,
+    int? maxAge,
+    bool? isSynced,
+  }) async {
+    final db = await database;
+    
+    List<String> conditions = [];
+    List<dynamic> args = [];
+    
+    if (nama != null && nama.isNotEmpty) {
+      conditions.add('nama LIKE ?');
+      args.add('%$nama%');
+    }
+    
+    if (whatsapp != null && whatsapp.isNotEmpty) {
+      conditions.add('whatsapp LIKE ?');
+      args.add('%$whatsapp%');
+    }
+    
+    if (gender != null && gender.isNotEmpty) {
+      conditions.add('gender = ?');
+      args.add(gender);
+    }
+    
+    if (minAge != null) {
+      conditions.add('usia >= ?');
+      args.add(minAge);
+    }
+    
+    if (maxAge != null) {
+      conditions.add('usia <= ?');
+      args.add(maxAge);
+    }
+    
+    if (isSynced != null) {
+      conditions.add('is_synced = ?');
+      args.add(isSynced ? 1 : 0);
+    }
+    
+    String whereClause = conditions.isNotEmpty ? 'WHERE ${conditions.join(' AND ')}' : '';
+    
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+      SELECT * FROM patients 
+      $whereClause
+      ORDER BY created_at DESC
+    ''', args);
+
+    return maps.map((map) => {
+      'id': map['id'],
+      'nama': map['nama'],
+      'whatsapp': map['whatsapp'],
+      'usia': map['usia'],
+      'gender': map['gender'],
+      'tinggi': map['tinggi'],
+      'created_at': DateTime.fromMillisecondsSinceEpoch(map['created_at']),
+      'server_id': map['server_id'],
+      'is_synced': map['is_synced'] == 1,
+      'synced_at': map['synced_at'] != null 
+        ? DateTime.fromMillisecondsSinceEpoch(map['synced_at'])
+        : null,
+    }).toList();
+  }
+
+  // Delete patient
+  Future<int> deletePatient(int patientId) async {
+    final db = await database;
+    return await db.delete(
+      'patients',
+      where: 'id = ?',
+      whereArgs: [patientId],
+    );
+  }
+
+  // Clear all patients
+  Future<int> clearAllPatients() async {
+    final db = await database;
+    return await db.delete('patients');
+  }
+
+  // Get patients with their Omron data count
+  Future<List<Map<String, dynamic>>> getPatientsWithDataCount() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+      SELECT 
+        p.*,
+        COALESCE(o.data_count, 0) as omron_data_count,
+        o.last_measurement
+      FROM patients p
+      LEFT JOIN (
+        SELECT 
+          patientName,
+          whatsappNumber,
+          COUNT(*) as data_count,
+          MAX(timestamp) as last_measurement
+        FROM omron_data 
+        GROUP BY patientName, whatsappNumber
+      ) o ON p.nama = o.patientName AND p.whatsapp = o.whatsappNumber
+      ORDER BY p.created_at DESC
+    ''');
+
+    return maps.map((map) => {
+      'id': map['id'],
+      'nama': map['nama'],
+      'whatsapp': map['whatsapp'],
+      'usia': map['usia'],
+      'gender': map['gender'],
+      'tinggi': map['tinggi'],
+      'created_at': DateTime.fromMillisecondsSinceEpoch(map['created_at']),
+      'server_id': map['server_id'],
+      'is_synced': map['is_synced'] == 1,
+      'synced_at': map['synced_at'] != null 
+        ? DateTime.fromMillisecondsSinceEpoch(map['synced_at'])
+        : null,
+      'omron_data_count': map['omron_data_count'] as int,
+      'last_measurement': map['last_measurement'] != null 
+        ? DateTime.fromMillisecondsSinceEpoch(map['last_measurement'] as int)
+        : null,
+    }).toList();
+  }
+
+  // Get combined patient and Omron data statistics
+  Future<Map<String, dynamic>> getCombinedStatistics() async {
+    final db = await database;
+    
+    final result = await db.rawQuery('''
+      SELECT 
+        -- Patient stats
+        (SELECT COUNT(*) FROM patients) as total_patients_table,
+        (SELECT COUNT(*) FROM patients WHERE is_synced = 1) as synced_patients,
+        (SELECT COUNT(*) FROM patients WHERE is_synced = 0) as unsynced_patients,
+        (SELECT MAX(synced_at) FROM patients) as last_patient_sync,
+        
+        -- Omron data stats
+        COUNT(*) as total_omron_records,
+        COUNT(DISTINCT patientName) as unique_omron_patients,
+        COUNT(DISTINCT whatsappNumber) as unique_whatsapp_numbers,
+        SUM(CASE WHEN isWhatsAppSent = 1 THEN 1 ELSE 0 END) as sent_whatsapp,
+        SUM(CASE WHEN isWhatsAppSent = 0 AND whatsappNumber IS NOT NULL THEN 1 ELSE 0 END) as pending_whatsapp,
+        MIN(timestamp) as first_omron_record,
+        MAX(timestamp) as last_omron_record
+      FROM omron_data
+    ''');
+
+    if (result.isNotEmpty) {
+      final stats = result.first;
+      return {
+        // Patient table stats
+        'totalPatientsTable': stats['total_patients_table'] as int,
+        'syncedPatients': stats['synced_patients'] as int,
+        'unsyncedPatients': stats['unsynced_patients'] as int,
+        'lastPatientSync': stats['last_patient_sync'] != null 
+          ? DateTime.fromMillisecondsSinceEpoch(stats['last_patient_sync'] as int)
+          : null,
+        
+        // Omron data stats
+        'totalOmronRecords': stats['total_omron_records'] as int,
+        'uniqueOmronPatients': stats['unique_omron_patients'] as int,
+        'uniqueWhatsAppNumbers': stats['unique_whatsapp_numbers'] as int,
+        'sentWhatsApp': stats['sent_whatsapp'] as int,
+        'pendingWhatsApp': stats['pending_whatsapp'] as int,
+        'firstOmronRecord': stats['first_omron_record'] != null 
+          ? DateTime.fromMillisecondsSinceEpoch(stats['first_omron_record'] as int)
+          : null,
+        'lastOmronRecord': stats['last_omron_record'] != null 
+          ? DateTime.fromMillisecondsSinceEpoch(stats['last_omron_record'] as int)
+          : null,
+      };
+    }
+    
+    return {
+      'totalPatientsTable': 0,
+      'syncedPatients': 0,
+      'unsyncedPatients': 0,
+      'lastPatientSync': null,
+      'totalOmronRecords': 0,
+      'uniqueOmronPatients': 0,
+      'uniqueWhatsAppNumbers': 0,
+      'sentWhatsApp': 0,
+      'pendingWhatsApp': 0,
+      'firstOmronRecord': null,
+      'lastOmronRecord': null,
+    };
+  }
+
+  // Clear all sync data (reset sync status)
+  Future<int> clearSyncData() async {
+    final db = await database;
+    return await db.update(
+      'patients',
+      {
+        'is_synced': 0,
+        'synced_at': null,
+      },
+    );
+  }
+
+  // Backup patients table
+  Future<List<Map<String, dynamic>>> backupPatients() async {
+    final db = await database;
+    return await db.query('patients', orderBy: 'created_at ASC');
+  }
+
+  // Restore patients table
+  Future<int> restorePatients(List<Map<String, dynamic>> backupData) async {
+    final db = await database;
+    
+    await db.delete('patients');
+    
+    int restoredCount = 0;
+    
+    for (Map<String, dynamic> item in backupData) {
+      item.remove('id');
+      await db.insert('patients', item);
+      restoredCount++;
+    }
+    
+    return restoredCount;
+  }
 }
+

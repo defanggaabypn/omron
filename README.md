@@ -61,11 +61,14 @@ lib/
 │
 ├── models/
 │   └── omron_data.dart             # Model data Omron dengan 11 fitur
+        patient.dart
 │
 ├── services/
 │   ├── database_service.dart       # Operasi SQLite
 │   ├── pdf_service.dart            # Generate laporan PDF
 │   └── whatsapp_direct_service.dart# Integrasi WhatsApp
+        api_service.dart
+        sync_service.dart
 │
 ├── screens/
 │   ├── omron_input_screen.dart     # Input data manual
